@@ -23,7 +23,7 @@ function auth(req, res, next) {
     } catch (_) { /* gec */ }
   }
   if (queryToken && queryToken === config.panelToken) return next();
-  res.set('WWW-Authenticate', 'Basic realm="WhatsApp Asistan"');
+  res.set('WWW-Authenticate', 'Basic realm="Mayis WP"');
   return res.status(401).send('Yetkisiz giris');
 }
 
@@ -126,9 +126,9 @@ app.get('/qr', (req, res) => {
   const { qrDataUrl, status } = getStatus();
   if (qrDataUrl) {
     res.set('Content-Type', 'text/html; charset=utf-8');
-    res.send(`<!doctype html><html><head><meta charset="utf-8"><title>QR - WhatsApp Asistan</title>
-      <style>body{font-family:sans-serif;background:#0b141a;color:#e9edef;display:flex;flex-direction:column;align-items:center;padding:40px;gap:16px}img{border-radius:12px;background:#fff;padding:12px}</style></head>
-      <body><h1>WhatsApp Asistan - Cihaz Bagla</h1>
+    res.send(`<!doctype html><html><head><meta charset="utf-8"><title>Mayis WP — Cihaz Bagla</title>
+      <style>body{font-family:sans-serif;background:#070d1f;color:#e6eeff;display:flex;flex-direction:column;align-items:center;padding:40px;gap:16px}img{border-radius:12px;background:#fff;padding:12px}h1{background:linear-gradient(135deg,#22d3ee,#3b82f6);-webkit-background-clip:text;background-clip:text;color:transparent}</style></head>
+      <body><h1>Mayis WP — Cihaz Bagla</h1>
       <p>Telefonunuzda WhatsApp &gt; Bagli Cihazlar &gt; Cihaz Bagla ile bu kodu okutun.</p>
       <img src="${qrDataUrl}" alt="QR Kod" width="320" height="320" />
       <p>Durum: ${status}</p></body></html>`);

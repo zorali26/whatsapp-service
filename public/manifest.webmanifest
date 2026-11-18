@@ -1,11 +1,11 @@
 {
-  "name": "WhatsApp Asistan",
-  "short_name": "WA Asistan",
+  "name": "Mayis WP",
+  "short_name": "Mayis WP",
   "description": "Kişisel WhatsApp hattınız için 7/24 yapay zekâ asistanı",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220",
+  "background_color": "#070d1f",
+  "theme_color": "#070d1f",
   "lang": "tr",
   "icons": [{ "src": "/logo-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
 }

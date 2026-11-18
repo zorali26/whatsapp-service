@@ -1,4 +1,4 @@
-# WhatsApp Asistan
+# Mayis WP
 
 Kişisel WhatsApp hattınız için **ücretsiz** 7/24 çalışan, DeepSeek destekli yapay zekâ asistanı.
 WhatsApp Web protokolünü **tarayıcısız** (Baileys, WebSocket) konuşur; Render Free planda (512 MB RAM) sığar.

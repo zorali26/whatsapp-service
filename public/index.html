@@ -4,33 +4,33 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#0f172a" />
-<title>WhatsApp Asistan — AI Yayın Merkezi</title>
+<title>Mayis WP — Senin WhatsApp AI Asistanın</title>
 <link rel="icon" href="/logo-icon.svg" type="image/svg+xml" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
 :root{
-  --bg:#0b1220; --panel:#111a2e; --panel2:#182238; --panel3:#1f2b47;
-  --border:#223050; --border-soft:#1a2540;
-  --text:#e6edf7; --muted:#8598b8; --faint:#5c6d8f;
-  --green:#10b981; --green2:#059669; --red:#f87171; --amber:#fbbf24;
-  --grad:linear-gradient(135deg,#10b981 0%,#059669 100%);
+  --bg:#070d1f; --panel:#0c1730; --panel2:#122041; --panel3:#1a2c55;
+  --border:#1f3a63; --border-soft:#17294a;
+  --text:#e6eeff; --muted:#8aa4d4; --faint:#55688f;
+  --green:#38bdf8; --green2:#0ea5e9; --red:#f87171; --amber:#fbbf24;
+  --grad:linear-gradient(135deg,#22d3ee 0%,#3b82f6 100%);
   --radius:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:radial-gradient(1200px 800px at 70% -10%,#10204a 0%,#070d1f 55%),#070d1f;color:var(--text);overflow:hidden}
 #app{display:grid;grid-template-columns:264px 1fr;height:100vh}
 
 /* ---------- Sidebar ---------- */
 #sidebar{background:linear-gradient(180deg,#0d1526 0%,#0b1220 100%);border-right:1px solid var(--border-soft);display:flex;flex-direction:column;padding:18px 14px;gap:6px}
 .brand{display:flex;align-items:center;gap:12px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:10px}
-.brand img{width:46px;height:46px;border-radius:12px;box-shadow:0 0 24px rgba(16,185,129,.35)}
+.brand img{width:46px;height:46px;border-radius:12px;box-shadow:0 0 28px rgba(56,189,248,.45)}
 .brand h1{font-size:15px;line-height:1.2}
 .brand small{display:block;font-size:9.5px;letter-spacing:1.6px;color:var(--green);font-weight:700;margin-top:2px}
 .nav{display:flex;flex-direction:column;gap:4px;flex:1}
 .navbtn{display:flex;align-items:center;gap:12px;padding:11px 12px;border:0;background:transparent;color:var(--muted);border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:500;text-align:left;transition:all .18s;position:relative}
 .navbtn:hover{background:var(--panel2);color:var(--text)}
-.navbtn.active{background:var(--grad);color:#04150d;font-weight:700;box-shadow:0 4px 18px rgba(16,185,129,.3)}
+.navbtn.active{background:var(--grad);color:#041a29;font-weight:700;box-shadow:0 4px 22px rgba(56,189,248,.4)}
 .navbtn .ic{width:20px;text-align:center;font-size:15px}
 .badge{margin-left:auto;background:var(--amber);color:#241a02;font-size:10.5px;font-weight:800;border-radius:10px;padding:2px 8px}
 .navbtn.active .badge{background:#04150d;color:var(--green)}
@@ -41,8 +41,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .dot.ready{background:var(--green);box-shadow:0 0 10px var(--green)}
 .dot.bad{background:var(--red);box-shadow:0 0 8px var(--red)}
 .sidebtn{display:flex;align-items:center;gap:10px;padding:10px 11px;background:var(--panel);border:1px solid var(--border-soft);color:var(--text);border-radius:10px;cursor:pointer;font-size:12px;transition:all .18s}
-.sidebtn:hover{border-color:var(--green);box-shadow:0 0 14px rgba(16,185,129,.18)}
-.sidebtn.on{border-color:var(--green);background:#0c2b1f}
+.sidebtn:hover{border-color:var(--green);box-shadow:0 0 16px rgba(56,189,248,.25)}
+.sidebtn.on{border-color:var(--green);background:#0b2138}
 
 /* ---------- Main ---------- */
 #main{overflow:hidden;display:flex;flex-direction:column;height:100vh;min-width:0}
@@ -72,7 +72,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .empty{color:var(--faint);font-size:12.5px;padding:26px;text-align:center}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#04150d;border:0;border-radius:10px;padding:9px 15px;cursor:pointer;font-weight:800;font-size:12.5px;transition:transform .15s}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#041a29;border:0;border-radius:10px;padding:9px 15px;cursor:pointer;font-weight:800;font-size:12.5px;transition:transform .15s}
 .btn:hover{transform:translateY(-1px)}
 .ghost{display:inline-flex;align-items:center;gap:8px;background:var(--panel2);color:var(--text);border:1px solid var(--border-soft);border-radius:10px;padding:8px 13px;cursor:pointer;font-size:12px;transition:border-color .15s}
 .ghost:hover{border-color:var(--green)}
@@ -108,7 +108,7 @@ label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacin
 #msgBox{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:8px;background:radial-gradient(ellipse at top,#0d1730 0%,var(--bg) 60%);min-height:0}
 .bub{max-width:64%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.45;position:relative;white-space:pre-wrap;word-break:break-word}
 .bub.in{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-soft);border-bottom-left-radius:3px}
-.bub.out{align-self:flex-end;background:#0c3b2e;border:1px solid #14532d;border-bottom-right-radius:3px}
+.bub.out{align-self:flex-end;background:#10315a;border:1px solid #1d4e89;border-bottom-right-radius:3px}
 .bub .bmeta{font-size:9px;color:var(--faint);margin-bottom:3px;display:flex;gap:8px;align-items:center}
 #composer{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--border-soft);background:#0e1626}
 #composer input{flex:1}
@@ -192,8 +192,8 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
 
   <aside id="sidebar">
     <div class="brand">
-      <img src="/logo-icon.svg" alt="Asistan" />
-      <div><h1>WhatsApp Asistan<small>AI YAYIN MERKEZİ</small></h1></div>
+      <img src="/logo-icon.svg" alt="Mayis WP" />
+      <div><h1>Mayis WP<small>MAYIS WP · AI YAYIN MERKEZİ</small></h1></div>
     </div>
     <nav class="nav">
       <button class="navbtn active" data-view="dashboard"><span class="ic">▦</span>Panel</button>

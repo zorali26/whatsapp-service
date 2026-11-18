@@ -1,7 +1,7 @@
 self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (_) { /* bos payload */ }
-  const title = data.title || 'WhatsApp Asistan';
+  const title = data.title || 'Mayis WP';
   const options = {
     body: data.body || '',
     icon: '/logo-icon.svg',

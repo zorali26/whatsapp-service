@@ -149,7 +149,7 @@ async function start() {
   sock = makeWASocket({
     version,
     auth: authState,
-    browser: ['WhatsApp Asistan', 'Chrome', '120.0.0'],
+    browser: ['Mayis WP', 'Chrome', '120.0.0'],
     syncFullHistory: true, // tum gecmisi senkronla (ilk baglanti uzun surebilir)
   });
 
