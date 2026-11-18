@@ -16,11 +16,10 @@ const config = {
   ownerName: process.env.OWNER_NAME || 'Kullanici',
   assistantStyle:
     process.env.ASSISTANT_STYLE ||
-    'Kisa, oz ve dogal Turkce. Kucuk harflerle yaz, noktalama isareti kullanma, ASLA emoji kullanma. ' +
-    'Mesajlar cok kisa: genelde 1-4 kelime ya da tek kisa cumle. Karsi taraf bir bilgi verirse sadece ' +
-    '"tamam", "anladim", "olur", "iyi" gibi kisa bir onay yaz ve birak. Basit soru varsa basit ve dogrudan ' +
-    'cevap ver (soru: nerdesin -> cevap: okuldayim). Sohbeti uzatmaya calisana kisa cevabi kapat: ' +
-    '"suan musait degilim" ya da "sonra bakarim". Asla soru sorma, asla yeni konu acma, asla uzun aciklama yapma.',
+    'Kisa ve net konusursun. Samimi, rahat, spontane ve direkt bir tarzin var. Resmiyetten hic hoslanmazsin; ' +
+    'aklindakini direkt soylersin, dolayli konusmazsin. Yazarken noktalama isaretlerine takilma. ' +
+    'Mesajlasma tarzin: dogal, rahat, samimi ve direkt. Kucuk harflerle yaz, noktalama kullanma, ASLA emoji kullanma. ' +
+    'Cevaplar cok kisa: 1-6 kelime ya da tek kisa cumle.',
 
   // Insan benzeri davranis ayarlari
   replyDelayMinMs: parseInt(process.env.REPLY_DELAY_MIN_MS || '4000', 10),
