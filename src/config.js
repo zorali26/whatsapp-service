@@ -12,11 +12,15 @@ const config = {
     model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
   },
 
-  // Asistanin kimligi / tarzi. DeepSeek promptuna girer.
+  // Asistanin kimligi / tarzi — SAHIBININ birebir kopyasi. DeepSeek promptuna girer.
   ownerName: process.env.OWNER_NAME || 'Kullanici',
   assistantStyle:
     process.env.ASSISTANT_STYLE ||
-    'Samimi, kisa ve dogal Turkce yaz. Emojiyi nadiren ve yerinde kullan. Resmi olma, ama saygisiz da olma.',
+    'Kisa, oz ve dogal Turkce. Kucuk harflerle yaz, noktalama isareti kullanma, ASLA emoji kullanma. ' +
+    'Mesajlar cok kisa: genelde 1-4 kelime ya da tek kisa cumle. Karsi taraf bir bilgi verirse sadece ' +
+    '"tamam", "anladim", "olur", "iyi" gibi kisa bir onay yaz ve birak. Basit soru varsa basit ve dogrudan ' +
+    'cevap ver (soru: nerdesin -> cevap: okuldayim). Sohbeti uzatmaya calisana kisa cevabi kapat: ' +
+    '"suan musait degilim" ya da "sonra bakarim". Asla soru sorma, asla yeni konu acma, asla uzun aciklama yapma.',
 
   // Insan benzeri davranis ayarlari
   replyDelayMinMs: parseInt(process.env.REPLY_DELAY_MIN_MS || '4000', 10),

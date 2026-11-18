@@ -123,9 +123,6 @@ label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacin
 .toggle.on::after{left:24px;background:#d1fae5}
 .toggle.block.on{background:#7f1d1d;border-color:#ef4444}
 .toggle.block.on::after{left:24px;background:#fecaca}
-.persona-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
-.chip{background:var(--panel2);border:1px solid var(--border-soft);color:var(--text);border-radius:20px;padding:5px 11px;font-size:11px;cursor:pointer;transition:all .15s}
-.chip:hover{border-color:var(--green);color:#a7f3d0}
 .blockcard{border-color:#3f1d1d !important}
 .blockchip{font-size:8.5px;background:#7f1d1d;color:#fecaca;border-radius:4px;padding:1px 5px;font-weight:800;letter-spacing:.5px}
 
@@ -222,12 +219,12 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
         <div class="card">
           <h3>Nasıl Çalışır?</h3>
           <div class="aifield" style="line-height:1.9">
-            1. Her gelen mesajda AI sohbeti okur → <b>özet + konunun gittiği yön</b> çıkarır.<br>
-            2. Sana uygun bir <b>cevap taslağı</b> hazırlar.<br>
-            3. <b>Otomatik</b> seçtiğin sohbetlere insan gibi yazıp <b>direkt cevap gönderir</b>.<br>
-            4. Diğerleri <b>Onay Bekleyenler</b>'e düşer — tek tıkla gönder.<br>
-            5. Sol menüden <b>🔊 Sesli Okuma</b>'yı açarsan gelen mesajları <b>sana okur</b>.<br>
-            6. <b>🔔 Bildirimleri Aç</b>'a basarsan site kapalıyken bile telefona bildirim gelir.<br>
+            1. AI senin ağzınla yazar: <b>kısa, öz, küçük harflerle, noktalama işaretsiz, emoji kullanmadan</b>.<br>
+            2. Seni uzatmak isteyene <b>"şu an müsait değilim"</b> ile kısa kapatır; bilgi verene <b>"tamam"</b> yazar; basit soruya kısa cevap verir.<br>
+            3. Her gelen mesajda sohbetin <b>özetini + konunun gittiği yönü</b> çıkarır.<br>
+            4. <b>Otomatik</b> açtığın sohbetlere onay sormadan direkt cevap gönderir.<br>
+            5. Diğerleri <b>Onay Bekleyenler</b>'e düşer — tek tıkla gönder.<br>
+            6. <b>🔊 Sesli Okuma</b> gelen mesajları sana okur; <b>🔔 Bildirimleri Aç</b> ile site kapalıyken bile bildirim gelir.
           </div>
         </div>
       </div>
@@ -270,23 +267,12 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
             <div class="aifield" id="askAnswer" style="margin-top:10px"></div>
           </div>
           <div class="card">
-            <h3>AI Kişilik <span style="text-transform:none;color:var(--faint)">— bu kişiye özel</span></h3>
-            <div class="persona-chips" id="personaChips">
-              <button class="chip" data-p="Samimi, gündelik ve esprili bir üslup kullan; emojileri nadiren ama yerinde kullan.">😊 Samimi</button>
-              <button class="chip" data-p="Profesyonel, saygılı ve resmi yaz; Bey/Hanım hitabı kullan, laubalilik yapma.">👔 Resmi</button>
-              <button class="chip" data-p="En fazla 1-2 cümleyle, net ve öz cevap ver; gereksiz laf yok.">⚡ Kısa &amp; Net</button>
-              <button class="chip" data-p="Uzun, ilgi dolu ve yumuşak bir ton kullan; detayları atlamadan nazikçe yaz.">💌 Uzun &amp; Nazik</button>
-            </div>
-            <textarea id="autoInstruction" placeholder="Örn: Anneme nazik ve uzun yaz; Burak'a sadece kısa ve net; patrona asla fiyat verme…"></textarea>
-            <p class="aifield" style="font-size:10.5px;color:var(--faint);margin-top:6px">Bu talimat hem cevap taslaklarına hem de (açıksa) otomatik cevaplara uygulanır.</p>
-            <button class="ghost" id="saveAutoBtn" style="margin-top:8px;width:100%;justify-content:center">Kişiliği Kaydet</button>
-          </div>
-          <div class="card">
             <h3>Otomatik Cevaplama</h3>
             <div class="switch">
               <span class="aifield">AI onay sormadan direkt cevap versin</span>
               <div class="toggle" id="autoToggle" role="switch" aria-checked="false" tabindex="0"></div>
             </div>
+            <p class="aifield" style="font-size:10.5px;color:var(--faint);margin-top:8px">AI senin yerine, senin ağzınla, bu üslupta yazar: kısa, öz, küçük harflerle, emoji kullanmadan.</p>
           </div>
           <div class="card blockcard">
             <h3 style="color:#f87171">Kara Liste</h3>
@@ -453,7 +439,6 @@ function renderAiRail(chat) {
   if (!chat) return;
   $('#aiSummary').textContent = chat.summary || 'Henüz özet yok — "Şimdi Özetle"ye basın.';
   $('#aiDirection').textContent = chat.topic_direction || '—';
-  $('#autoInstruction').value = chat.auto_instruction || '';
   $('#autoToggle').classList.toggle('on', !!chat.auto_enabled);
   $('#autoToggle').setAttribute('aria-checked', chat.auto_enabled ? 'true' : 'false');
   $('#blockToggle').classList.toggle('on', !!chat.blacklisted);
@@ -523,10 +508,10 @@ $('#autoToggle').addEventListener('click', async () => {
     await api('/api/rules/' + encodeURIComponent(state.selectedChat), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled, instruction: $('#autoInstruction').value }),
+      body: JSON.stringify({ enabled }),
     });
     toast(enabled
-      ? 'OTOMATİK CEVAPLAMA AÇILDI — AI bu sohbete direkt yanıt verecek'
+      ? 'OTOMATİK CEVAPLAMA AÇILDI — AI senin ağzınla, kısa ve öz yanıt veriyor'
       : 'Otomatik cevaplama KAPATILDI');
     loadChats(); loadStats();
   } catch (e) {
@@ -542,27 +527,6 @@ $('#blockToggle').addEventListener('click', async () => {
     $('#blockToggle').classList.toggle('on', willBlock);
     toast(willBlock ? 'KARA LİSTEYE EKLENDİ — AI bu sohbete cevap vermeyecek' : 'Kara listeden çıkarıldı');
     loadChats();
-  } catch (e) { toast('Hata: ' + e.message); }
-});
-
-// Hazir persona sablonlari — tiklayinca talimat alanini doldurur
-$('#personaChips').addEventListener('click', (e) => {
-  const chip = e.target.closest('.chip');
-  if (!chip) return;
-  $('#autoInstruction').value = chip.dataset.p;
-  toast('Kişilik taslağı alana eklendi — kaydedin');
-});
-
-$('#saveAutoBtn').addEventListener('click', async () => {
-  if (!state.selectedChat) return;
-  const enabled = $('#autoToggle').classList.contains('on');
-  const instruction = $('#autoInstruction').value;
-  try {
-    await api('/api/rules/' + encodeURIComponent(state.selectedChat), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ enabled, instruction }) });
-    toast(enabled
-      ? 'AI kişiliği kaydedildi — otomatik cevaplama AÇIK kalıyor (direkt gönderir)'
-      : 'AI kişiliği kaydedildi');
-    loadChats(); loadStats();
   } catch (e) { toast('Hata: ' + e.message); }
 });
 
