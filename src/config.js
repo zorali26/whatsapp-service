@@ -12,14 +12,11 @@ const config = {
     model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
   },
 
-  // Asistanin kimligi / tarzi — SAHIBININ birebir kopyasi. DeepSeek promptuna girer.
-  ownerName: process.env.OWNER_NAME || 'Kullanici',
+  // Asistanin kimligi / tarzi. DeepSeek promptuna girer.
+  ownerName: process.env.OWNER_NAME || 'Mehmet Ali',
   assistantStyle:
     process.env.ASSISTANT_STYLE ||
-    'Kisa ve net konusursun. Samimi, rahat, spontane ve direkt bir tarzin var. Resmiyetten hic hoslanmazsin; ' +
-    'aklindakini direkt soylersin, dolayli konusmazsin. Yazarken noktalama isaretlerine takilma. ' +
-    'Mesajlasma tarzin: dogal, rahat, samimi ve direkt. Kucuk harflerle yaz, noktalama kullanma, ASLA emoji kullanma. ' +
-    'Cevaplar cok kisa: 1-6 kelime ya da tek kisa cumle.',
+    'Heyecanli, samimi, kisa ve oz.',
 
   // Insan benzeri davranis ayarlari
   replyDelayMinMs: parseInt(process.env.REPLY_DELAY_MIN_MS || '4000', 10),
