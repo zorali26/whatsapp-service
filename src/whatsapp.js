@@ -1,130 +1,213 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const fs = require('fs');
+const path = require('path');
 const qrcodeTerminal = require('qrcode-terminal');
 const QRCode = require('qrcode');
-const path = require('path');
+const makeWASocket = require('@whiskeysockets/baileys').default;
+const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+
 const config = require('./config');
 const { queries, log } = require('./db');
-const { handleIncomingMessage } = require('./handlers');
+const { analyzeAndMaybeRespond } = require('./handlers');
+
+const AUTH_DIR = path.join(config.dataDir, 'baileys_auth');
 
 const state = {
-  status: 'starting', // starting | qr | authenticated | ready | disconnected | auth_failure
+  status: 'starting', // starting | qr | authenticated | ready | disconnected | auth_failure | error
   qrDataUrl: null,
   me: null,
 };
 
-let client = null;
-
-function createClient() {
-  client = new Client({
-    authStrategy: new LocalAuth({
-      clientId: 'asistan',
-      dataPath: path.join(config.dataDir, 'wwebjs_auth'),
-    }),
-    puppeteer: {
-      headless: true,
-      executablePath: config.puppeteerExecutablePath,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-blink-features=AutomationControlled',
-        '--window-size=1366,768',
-      ],
-    },
-  });
-
-  client.on('loading_screen', (percent, message) => {
-    log('info', `WhatsApp Web yukleniyor: %${percent} ${message || ''}`);
-  });
-
-  client.on('qr', (qr) => {
-    state.status = 'qr';
-    qrcodeTerminal.generate(qr, { small: true });
-    QRCode.toDataURL(qr, { width: 320 })
-      .then((url) => { state.qrDataUrl = url; })
-      .catch((e) => log('error', 'QR gorsel olusturulamadi: ' + e.message));
-    log('info', 'QR kod uretildi. Telefondan WhatsApp > Bagli Cihazlar > Cihaz Bagla ile tarayin.');
-  });
-
-  client.on('authenticated', () => {
-    state.status = 'authenticated';
-    state.qrDataUrl = null;
-    log('info', 'WhatsApp dogrulandi.');
-  });
-
-  client.on('auth_failure', (msg) => {
-    state.status = 'auth_failure';
-    log('error', 'WhatsApp kimlik dogrulama hatasi: ' + msg);
-  });
-
-  client.on('ready', async () => {
-    state.status = 'ready';
-    state.me = client.info?.wid?.user || null;
-    log('info', `WhatsApp hazir. Bagli numara: ${state.me || 'bilinmiyor'}`);
-    if (config.fetchHistoryOnStart) {
-      await fetchHistory().catch((e) => log('error', 'Gecmis mesajlar yuklenemedi: ' + e.message));
-    }
-  });
-
-  client.on('disconnected', (reason) => {
-    state.status = 'disconnected';
-    log('error', 'WhatsApp baglantisi koptu: ' + reason + ' - Uygulama yeniden baslatilacak.');
-    // Render uctan uca yeniden baslatir; yerelde de process cikisi yapalim
-    setTimeout(() => process.exit(1), 3000);
-  });
-
-  client.on('message_create', async (msg) => {
-    try {
-      if (!msg.from || msg.from === 'status@broadcast' || msg.from.endsWith('@newsletter')) return;
-      if (msg.from.endsWith('@broadcast')) return;
-      await handleIncomingMessage(client, msg);
-    } catch (e) {
-      log('error', 'Mesaj islenirken hata: ' + e.message);
-    }
-  });
-
-  return client;
-}
-
-async function fetchHistory() {
-  log('info', 'Gecmis mesajlar yukleniyor...');
-  const chats = await client.getChats();
-  const sorted = chats
-    .filter((c) => c.id?._serialized)
-    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-    .slice(0, 30);
-
-  for (const chat of sorted) {
-    queries.upsertChat({
-      id: chat.id._serialized,
-      name: chat.name || chat.formattedTitle || chat.id.user,
-      is_group: chat.isGroup ? 1 : 0,
-      updated_at: Date.now(),
-    });
-    try {
-      const msgs = await chat.fetchMessages({ limit: config.historyLimitPerChat });
-      for (const m of msgs) await handleIncomingMessage(client, m, { silent: true });
-    } catch (e) {
-      log('error', `Gecmis yuklenemedi (${chat.name}): ${e.message}`);
-    }
-  }
-  log('info', 'Gecmis mesajlar yuklendi.');
-}
+let sock = null;
+let reconnectAttempts = 0;
+const groupNameCache = new Map();
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Insan gibi: once "yaziyor..." goster, mesaji yaziyor gibi bekle, sonra gonder. */
+function extractText(raw) {
+  const m = raw.message || {};
+  return (
+    m.conversation ||
+    m.extendedTextMessage?.text ||
+    m.imageMessage?.caption ||
+    m.videoMessage?.caption ||
+    m.documentMessage?.caption ||
+    m.buttonsResponseMessage?.selectedButtonId ||
+    m.buttonsResponseMessage?.selectedDisplayText ||
+    m.templateButtonReplyMessage?.selectedId ||
+    m.listResponseMessage?.title ||
+    m.interactiveResponseMessage?.body?.text ||
+    m.reactionMessage?.text ||
+    ''
+  );
+}
+
+function messageType(raw) {
+  const m = raw.message || {};
+  const key = Object.keys(m).find((k) => k !== 'messageContextInfo' && k !== 'senderKeyDistributionMessage');
+  return key || 'unknown';
+}
+
+function hasMedia(raw) {
+  const m = raw.message || {};
+  return ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage'].some((k) => m[k]);
+}
+
+async function resolveChatName(chatId, pushName) {
+  if (chatId.endsWith('@g.us')) {
+    if (groupNameCache.has(chatId)) return groupNameCache.get(chatId);
+    try {
+      const meta = await sock.groupMetadata(chatId);
+      const name = meta?.subject || chatId;
+      groupNameCache.set(chatId, name);
+      return name;
+    } catch (_) {
+      return chatId;
+    }
+  }
+  if (pushName) return pushName;
+  return chatId.split('@')[0];
+}
+
+async function handleMessage(raw, { silent = false } = {}) {
+  if (!raw?.message || !raw?.key?.remoteJid) return;
+  const chatId = raw.key.remoteJid;
+  if (chatId === 'status@broadcast' || chatId.endsWith('@newsletter') || chatId.endsWith('@broadcast')) return;
+
+  const fromMe = !!raw.key.fromMe;
+  const body = extractText(raw) || (hasMedia(raw) ? '(medya)' : '');
+  const sender = raw.key.participant || (fromMe ? state.me : chatId);
+  const timestamp = Number(raw.messageTimestamp || 0) * 1000 || Date.now();
+
+  const name = await resolveChatName(chatId, fromMe ? null : raw.pushName);
+
+  queries.upsertChat({
+    id: chatId,
+    name,
+    is_group: chatId.endsWith('@g.us') ? 1 : 0,
+    updated_at: Date.now(),
+  });
+
+  queries.saveMessage({
+    wa_id: raw.key.id,
+    chat_id: chatId,
+    sender: sender || chatId,
+    sender_name: fromMe ? config.ownerName : (raw.pushName || ''),
+    body,
+    from_me: fromMe ? 1 : 0,
+    type: messageType(raw),
+    timestamp,
+    has_media: hasMedia(raw) ? 1 : 0,
+  });
+
+  if (fromMe || silent) return;
+
+  await analyzeAndMaybeRespond({
+    chatId,
+    chatName: name,
+    triggerWaId: raw.key.id,
+    silent: false,
+    humanSend: humanAutoReply,
+  });
+}
+
+async function start() {
+  fs.mkdirSync(AUTH_DIR, { recursive: true });
+
+  let version;
+  try {
+    const latest = await fetchLatestBaileysVersion();
+    version = latest.version;
+  } catch (_) {
+    version = undefined; // varsayilan surumle devam et
+  }
+
+  const { state: authState, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+
+  sock = makeWASocket({
+    version,
+    auth: authState,
+    browser: ['WhatsApp Asistan', 'Chrome', '120.0.0'],
+    syncFullHistory: false,
+  });
+
+  sock.ev.on('creds.update', saveCreds);
+
+  sock.ev.on('connection.update', (update) => {
+    const { connection, lastDisconnect, qr } = update;
+
+    if (qr) {
+      state.status = 'qr';
+      qrcodeTerminal.generate(qr, { small: true });
+      QRCode.toDataURL(qr, { width: 320 })
+        .then((url) => { state.qrDataUrl = url; })
+        .catch((e) => log('error', 'QR gorsel olusturulamadi: ' + e.message));
+      log('info', 'QR kod uretildi. Telefondan WhatsApp > Bagli Cihazlar > Cihaz Bagla ile okutun (panelde /qr sayfasi da guncel).');
+    }
+
+    if (connection === 'open') {
+      state.status = 'ready';
+      state.qrDataUrl = null;
+      reconnectAttempts = 0;
+      const id = sock.user?.id || '';
+      state.me = id.split('@')[0].split(':')[0] || null;
+      log('info', `WhatsApp hazir. Bagli numara: ${state.me || 'bilinmiyor'}`);
+    }
+
+    if (connection === 'close') {
+      const code = lastDisconnect?.error?.output?.statusCode;
+      const loggedOut = code === DisconnectReason.loggedOut;
+      state.status = loggedOut ? 'auth_failure' : 'disconnected';
+
+      if (loggedOut) {
+        log('error', 'Oturum kapatilmis (logged out). Oturum dosyalari silinip yeniden QR uretilecek.');
+        try { fs.rmSync(AUTH_DIR, { recursive: true, force: true }); } catch (_) { /* ignore */ }
+        process.exit(1); // Render servisi yeniden baslatir -> taze QR
+      }
+
+      reconnectAttempts += 1;
+      const wait = Math.min(30000, 2000 * reconnectAttempts);
+      log('error', `Baglanti koptu (kod: ${code ?? 'bilinmiyor'}). ${Math.round(wait / 1000)} sn sonra yeniden baglanilacak (deneme ${reconnectAttempts}).`);
+      setTimeout(() => start().catch((e) => log('error', 'Yeniden baglanma hatasi: ' + e.message)), wait);
+    }
+  });
+
+  sock.ev.on('messages.upsert', async ({ type, messages }) => {
+    if (type !== 'notify') return;
+    for (const m of messages || []) {
+      try {
+        await handleMessage(m);
+      } catch (e) {
+        log('error', 'Mesaj islenirken hata: ' + e.message);
+      }
+    }
+  });
+
+  // Baglanti acildiginda gecmis mesajlar gelirse sessizce kaydet (AI cagrisi yapma)
+  sock.ev.on('messaging-history.set', async ({ messages } = {}) => {
+    try {
+      const list = Array.isArray(messages) ? messages : [];
+      log('info', `Gecmis mesajlar alindi: ${list.length} adet (AI cagrisi yapilmadan kaydedildi).`);
+      for (const m of list.slice(-500)) {
+        await handleMessage(m, { silent: true }).catch(() => {});
+      }
+    } catch (e) {
+      log('error', 'Gecmis mesaj kaydi basarisiz: ' + e.message);
+    }
+  });
+
+  return sock;
+}
+
+/** Insan gibi: once "yaziyor..." goster, mesajin uzunluguna gore bekle, sonra gonder. */
 async function humanSendMessage(chatId, body) {
-  const chat = await client.getChatById(chatId);
-  await chat.sendStateTyping();
+  if (!sock) throw new Error('WhatsApp henuz hazir degil');
+  await sock.sendPresenceUpdate('composing', chatId).catch(() => {});
   const typingTime = Math.min(Math.max(body.length * config.typingPerCharMs, 1500), 12000);
   await sleep(typingTime + Math.random() * 1500);
-  const sent = await client.sendMessage(chatId, body);
-  await chat.clearState().catch(() => {});
-  return sent;
+  await sock.sendPresenceUpdate('paused', chatId).catch(() => {});
+  return sock.sendMessage(chatId, { text: body });
 }
 
 async function humanAutoReply(chatId, body) {
@@ -134,38 +217,25 @@ async function humanAutoReply(chatId, body) {
 }
 
 /**
- * Mesaj silme.
- * - from_me = true  -> hedef='everyone': herkesten sil (yaklasik 2 gun icinde)
- * - from_me = false -> hedef='me': sadece sizin ekraninizdan sil
- * Karsi tarafin mesajini herkes icin silmek WhatsApp'ta mumkun degildir.
+ * Mesaj sil.
+ * NOT: Bu modda (Baileys) yalnizca KENDI mesajinizi HERKESTEN silebilirsiniz.
+ * Karsi tarafin mesajini sizden bile kaldirmanin garantili bir yolu yoktur.
  */
-async function deleteMessage(waId, target = 'auto') {
+async function deleteMessage(waId, target = 'everyone') {
+  if (!sock) throw new Error('WhatsApp henuz hazir degil');
   const stored = queries.getMessageByWaId(waId);
-  const msg = await client.getMessageById(waId).catch(() => null);
-  if (!msg) throw new Error('Mesaj bulunamadi (suresi gecmis ya da silinmis olabilir).');
-
-  const everyone = target === 'everyone' || (target === 'auto' && stored?.from_me);
-  if (everyone && !stored?.from_me) {
-    throw new Error('Karsi tarafin mesajini herkesten silemezsiniz. Sadece "benden sil" yapilabilir.');
+  if (!stored) throw new Error('Mesaj kaydi bulunamadi.');
+  if (!stored.from_me) {
+    throw new Error('Karsi tarafin mesajini bu modda silemezsiniz. Yalnizca kendi mesajlarinizi herkesten silebilirsiniz.');
   }
-  await msg.delete(!!everyone);
-  return { ok: true, deleted: everyone ? 'everyone' : 'me' };
+  await sock.sendMessage(stored.chat_id, {
+    delete: { remoteJid: stored.chat_id, id: stored.wa_id, fromMe: true },
+  });
+  return { ok: true, deleted: 'everyone' };
 }
 
 function getStatus() {
   return { ...state, aiConfigured: !!config.deepseek.apiKey };
-}
-
-function start() {
-  log('info', 'Chrome yolu: ' + (config.puppeteerExecutablePath || 'puppeteer varsayilani'));
-  createClient();
-  client.initialize().catch((e) => {
-    state.status = 'error';
-    console.error('WHATSAPP HATASI DETAY:', e);
-    const detail = (e && (e.stack || e.message)) || (typeof e === 'object' ? JSON.stringify(e) : String(e));
-    log('error', 'WhatsApp baslatilamadi: ' + detail);
-  });
-  return client;
 }
 
 module.exports = { start, getStatus, humanSendMessage, humanAutoReply, deleteMessage };

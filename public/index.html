@@ -169,13 +169,13 @@ async function toggleMessages(id) {
   box.innerHTML = msgs.map(m => `
     <div class="msg ${m.from_me ? 'me' : ''}">
       <div class="meta">${m.from_me ? 'BEN' : esc(m.sender_name || m.sender || '')} · ${new Date(m.timestamp).toLocaleString('tr-TR')}
-        ${m.from_me ? `<button class="danger" style="margin-left:8px" onclick="delMsg('${esc(m.wa_id)}','everyone')">Herkesten sil</button>` : `<button class="danger" style="margin-left:8px" onclick="delMsg('${esc(m.wa_id)}','me')">Benden sil</button>`}
+        ${m.from_me ? `<button class="danger" style="margin-left:8px" onclick="delMsg('${esc(m.wa_id)}','everyone')">Herkesten sil</button>` : '<span style="margin-left:8px">(karsi taraf mesaji silinemez)</span>'}
       </div>${esc(m.body || '(medya)')}</div>`).join('');
   box.classList.remove('hidden');
 }
 async function delMsg(waId, target) {
-  if (!confirm(target === 'everyone' ? 'Bu mesajiniz herkesten silinsin mi?' : 'Bu mesaj sadece sizin ekraninizdan silinsin mi?')) return;
-  try { const r = await api('/api/messages/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ waId, target }) }); toast(r.deleted === 'everyone' ? 'Herkesten silindi' : 'Sizden silindi'); }
+  if (!confirm('Bu mesajiniz herkesten silinsin mi?')) return;
+  try { const r = await api('/api/messages/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ waId, target }) }); toast('Mesajiniz herkesten silindi'); }
   catch (e) { toast('Hata: ' + e.message); }
 }
 async function promptSend(id) {

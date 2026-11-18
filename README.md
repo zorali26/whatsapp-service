@@ -1,85 +1,76 @@
 # WhatsApp Asistan
 
-Kişisel WhatsApp hattınız için sunucuda 7/24 çalışan, DeepSeek destekli yapay zekâ asistanı.
+Kişisel WhatsApp hattınız için **ücretsiz** 7/24 çalışan, DeepSeek destekli yapay zekâ asistanı.
+WhatsApp Web protokolünü **tarayıcısız** (Baileys, WebSocket) konuşur; Render Free planda (512 MB RAM) sığar.
 
 **Ne yapar?**
-- Tüm sohbetlerinizi okur, veritabanına kaydeder
+- Gelen/giden tüm mesajları okur, veritabanına kaydeder
 - Gelen her mesajda sohbetin özetini ve **konunun gittiği yönü** çıkarır
-- Seçili kişilere/gruplara **insan gibi gecikme + "yazıyor..." durumu** ile otomatik yanıt verir
+- Seçtiğiniz kişilere "yazıyor..." durumu + insan benzeri gecikme ile **otomatik yanıt** verir
 - Diğer sohbetler için onayınıza sunulan **cevap taslakları** hazırlar
-- Panelden dilediğiniz sohbete soru sorun: *"Bu sohbette konu nereye gidiyor?"*
-- Mesaj silme: kendi mesajınız → herkes için; karşı tarafın mesajı → yalnızca sizin ekranınızda
+- "Sohbete Sor" sekmesinden dilediğiniz sohbet hakkında soru sorun
+- Kendi mesajınızı **herkesten silme** (karşı tarafın mesajı silinemez — WhatsApp sınırı + bu modun sınırı)
 
 ---
 
-## ÖNEMLİ: Risk ve Yasal Sınırlar
+## ÖNEMLİ: Risk ve Sınırlar
 
-1. **Bu bir "risksiz" çözüm değildir.** WhatsApp, kişisel hesaba bağlanan üçüncü taraf otomasyonu kullanım koşullarında yasaklar. Bu proje, WhatsApp Web'i **gerçek bir Chromium tarayıcı** ile ("gerçek insan gibi") kullanır ve insan benzeri gecikmeler ekler — ama ban riski hiçbir zaman %0 değildir. Riski gerçekten sıfıra indiren tek yol WhatsApp Business Platform (Cloud API) kullanmaktır; bu proje bilinçli olarak o yolu seçmemiştir.
-2. **Başkasının mesajını herkes için silemezsiniz.** WhatsApp buna izin vermez. Sistem; sizin mesajınızı "herkesten sil" (yaklaşık 2 gün içinde), karşı tarafın mesajını ise yalnızca "benden sil" yapabilir.
-3. Bu sistem **sizin kendi numaranız, sizin verileriniz** içindir. Numaranızı siz bağlarsınız, sohbetleriniz sizin sunucunuzda/diskinizde kalır. Karşı tarafın rızası olmadan otomatik yanıt verilen gruplarda/kişilerde dikkatli olun.
+1. **Bu çözüm de resmi değildir.** Baileys, WhatsApp Web protokolünü taklit eden açık kaynak bir kütüphanedir ve WhatsApp kullanım koşullarına aykırıdır. Ban riski hiçbir zaman %0 değildir; insan benzeri gecikmeler riski azaltır, sıfırlamaz. Kişisel numaranız risk altındadır.
+2. **Karşı tarafın mesajını silemezsiniz** — ne sizin, ne bu sistemin. Bu modda yalnızca KENDİ mesajlarınızı herkes için silebilirsiniz.
+3. Verileriniz sizin sunucunuzda kalır; panel `PANEL_TOKEN` ile şifrelidir.
 
 ---
 
-## Kurulum (Yerel)
+## Render FREE Üzerinde Ücretsiz 7/24 (Önerilen Yol)
+
+1. Bu repoyu GitHub'da saklayın (Private).
+2. Render → **New → Web Service** (Blueprint yerine elle kurun — Free plan için):
+   - Repository: repoyu seçin
+   - Runtime: **Docker** (repodaki `Dockerfile` kullanılır, Build/Start komutu sormaz)
+   - Instance Type: **Free**
+   - Environment Variables: `PANEL_TOKEN` (rastgele şifre), `DEEPSEEK_API_KEY` (`sk-...`), `OWNER_NAME`, `DATA_DIR=/data`
+3. Deploy bitince `https://<servis>.onrender.com/qr` adresinden QR'ı okutun (WhatsApp → Bağlı Cihazlar → Cihaz Bağla).
+4. **Uyku modunu engellemek için** ücretsiz [cron-job.org](https://cron-job.org) hesabı açın:
+   - Create cronjob → URL: `https://<servis>.onrender.com/api/status` → her **10-14 dakikada** bir çalıştırın
+   - Basic Auth gerekiyor mu sorarsa: kullanıcı `admin`, şifre `PANEL_TOKEN`
+5. **Oturum kalıcılığı:** Free planda disk kalıcı değildir. Redeploy veya servisin yeniden başlatılması sonrası **QR'ı tekrar okutmanız gerekir** (deploylar nadirdir; normal yeniden başlatmalarda oturum korunur). Sıfır QR sürekliliği istiyorsanız ücretsiz **Oracle Cloud Always Free** VM'yi ya da ücretli Starter planı kullanın.
+
+## Yerel Kurulum
 
 ```bash
 npm install
-cp .env.example .env   # Windows: copy .env.example .env
-# .env icinde PANEL_TOKEN ve DEEPSEEK_API_KEY doldurun
+cp .env.example .env   # PANEL_TOKEN ve DEEPSEEK_API_KEY doldurun
 npm start
 ```
 
-1. Konsoldaki QR kodu (veya `http://localhost:3000/qr` sayfasını) telefonunuzla tarayın:
-   WhatsApp → **Bağlı Cihazlar → Cihaz Bağla**.
-2. Panel: `http://localhost:3000` — kullanıcı adı **admin**, şifre `.env` içindeki `PANEL_TOKEN`.
-
-## Render'a Dağıtım (7/24)
-
-1. Bu klasörü bir GitHub reposuna push'layın.
-2. [render.com](https://render.com) → **New → Blueprint** → repoyu seçin (`render.yaml` algılanır).
-3. Render panelinde `PANEL_TOKEN` ve `DEEPSEEK_API_KEY` değerlerini girin, `OWNER_NAME`'i düzenleyin.
-4. Deploy bitince servis adresine gidin → kullanıcı adı `admin`, şifre `PANEL_TOKEN`.
-5. `https://<servis>.onrender.com/qr` adresini açın, telefonla tarayın. Oturum `/data` diskine yazılır; sonraki deploy'larda QR gerekmez.
-
-**Notlar:**
-- Render **Free** plan 15 dakikada bir uyur ve diski kalıcı değildir → 7/24 isteniyorsa **Starter** plan (2 GB RAM) gerekir.
-- Oturumun kalıcı olması için `render.yaml` içindeki `disk` tanımı şarttır. Disk yoksa her deploy'da yeniden QR okutmanız gerekir.
-- DeepSeek maliyeti: `deepseek-chat` ile sohbet başına birkaç sentin altında; yoğun mesaj trafiğinde "fatura dikkat" uyarısı.
+- QR'ı konsolda veya `http://localhost:3000/qr` üzerinden okutun
+- Panel: `http://localhost:3000` (kullanıcı adı `admin`, şifre `PANEL_TOKEN`)
 
 ## Panel Kullanımı
 
 | Sekme | İşlevi |
 |---|---|
-| Sohbetlerim | Tüm sohbetler, AI özeti + konunun gittiği yön, "Şimdi özetle", otomatik yanıt aç/kapa + kişi bazlı talimat |
-| Onay Bekleyenler | AI'nın hazırladığı cevap taslakları; düzenleyip gönderin veya yok sayın |
-| Sohbete Sor | Yapay zekâya o sohbet hakkında serbest soru sorun |
-| Kayıtlar | Sistem logları (hata ayıklama) |
-
-**Otomatik yanıt açma:** Sohbetlerim sekmesinde ilgili sohbetin sağındaki "KAPALI — onayınızı bekler" yazısına tıklayın → ACIK olur. Kişiye özel talimat (örn. "Kısa ve net konuş, randevu için Cuma de") yazıp kaydedin. O kişinden gelen her mesajda asistan otomatik yanıtlar; diğer sohbetler taslak olarak onayınıza düşer.
-
-## Güvenlik
-
-- Panel `PANEL_TOKEN` ile Basic Auth arkasındadır — boş bırakmayın, kimseyle paylaşmayın.
-- DeepSeek'e giden veriler sohbet metinleridir; ifşası sizin sorumluluğunuzda.
-- `.env` dosyası repoya **girmemelidir** (`.gitignore` hazırdır).
+| Sohbetlerim | Tüm sohbetler + AI özeti + konunun gittiği yön, Otomatik yanıt aç/kapa + kişi bazlı talimat |
+| Onay Bekleyenler | AI taslakları; düzenleyip gönderin veya yok sayın |
+| Sohbete Sor | AI'ya sohbet hakkında soru sorun ("bu konu nereye gidiyor?" vb.) |
+| Kayıtlar | Sistem logları |
 
 ## Dosya Yapısı
 
 ```
-src/config.js      Ayarlar (.env)
-src/db.js          SQLite (sohbetler, mesajlar, oneriler, kurallar, loglar)
-src/ai.js          DeepSeek API (ozet, yon tahmini, cevap taslagi, soru-cevap)
-src/whatsapp.js    WhatsApp Web istemcisi (QR, insan gibi gonderim, silme)
-src/handlers.js    Gelen mesaj akisi (kaydet → analiz → otomatik/onay)
-src/server.js      Panel API + Basic Auth
-public/index.html  Panel arayuzu
-Dockerfile         Render/Docker imaji (sistem Chromium)
-render.yaml        Render Blueprint
+src/baileys -> WhatsApp katmanı src/whatsapp.js (WebSocket, tarayıcısız)
+src/handlers.js  Gelen mesaj akışı (kaydet → AI analiz → otomatik / onay listesi)
+src/ai.js        DeepSeek API
+src/db.js        SQLite (mesajlar, taslaklar, kurallar, loglar)
+src/server.js    Panel API + Basic Auth
+public/index.html  Panel
+Dockerfile / render.yaml  Render dağıtımı
 ```
 
 ## Sorun Giderme
 
-- **QR sürekli yenileniyor / bağlanmıyor:** Sunucu oturumu diskte değilse her deploy'da QR okutulur. Render'da disk bağlı olduğundan emin olun.
-- **"DeepSeek API hatasi 401":** `DEEPSEEK_API_KEY` yanlış veya eksik.
-- **Chromium başlamıyor:** Render'da Docker runtime kullanıldığından emin olun (Native yok). Yerelde Node 20+ kullanın.
-- **Hesabımda olağandışı aktivite uyarısı gelirse:** Otomasyonu hemen kapatın (süreç durdurun), birkaç gün normal telefon kullanımına dönün.
+- **QR sürekli yenileniyor:** Telefonunuz internete bağlı mı? 14 gün bağlı kalmazsa WhatsApp cihazı düşürür; yeniden okutun.
+- **"DeepSeek API hatasi 401":** `DEEPSEEK_API_KEY` yanlış/eksik — Render → Environment'dan düzeltin.
+- **Servis uykuya dalıyor:** cron-job.org ping'i kurun (yukarıda). Free plan inactivity'de uyur.
+- **Yeniden başlatma sonrası "bağlı değil":** Free planda oturum dosyaları silinmiştir → `/qr`'dan tekrar okutun.
+- **Ban riski:** Olağandışı aktivite uyarısı gelirse servisi durdurun ve birkaç gün otomasyona ara verin.

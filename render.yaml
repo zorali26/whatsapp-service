@@ -1,21 +1,19 @@
-# Render acik (Blueprint) kurulumu icin:
-# Render Dashboard > New > Blueprint > bu repoyu secin.
+# Render Free plan ucretsiz site (Web Service) icin:
+# NOT: Free planda kalici disk YOKTUR. Yeniden baslatma/deploy sonrasi
+# oturum dosyalari silinir ve QR'i tekrar okutmaniz gerekir.
+# 7/24 icin cron-job.org gibi ucretsiz bir servisle /api/status'a
+# her 10-14 dakikada bir istek atin (uyku modu engellenir).
 services:
   - type: web
     name: whatsapp-asistan
     runtime: docker
-    plan: starter          # 7/24 icin Free plan uygun degil (uyur + disk yok). Starter (~2GB RAM) onerilir.
-    region: frankfurt      # Turkiye'ye en yakin bolge
-    dockerfilePath: ./Dockerfile
-    disk:
-      name: asistan-data   # Oturum + veritabani burada kalici saklanir; yoksa her deploy'da QR okutmaniz gerekir
-      mountPath: /data
-      sizeGB: 1
+    plan: free
+    region: frankfurt
     envVars:
       - key: PANEL_TOKEN
-        sync: false        # Render panelinde elle girin (uzun rastgele sifre)
+        sync: false
       - key: DEEPSEEK_API_KEY
-        sync: false        # Render panelinde elle girin
+        sync: false
       - key: DEEPSEEK_MODEL
         value: deepseek-chat
       - key: OWNER_NAME

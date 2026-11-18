@@ -27,8 +27,7 @@ const config = {
   fetchHistoryOnStart: process.env.FETCH_HISTORY_ON_START !== 'false',
   historyLimitPerChat: parseInt(process.env.HISTORY_LIMIT_PER_CHAT || '20', 10),
 
-  // Puppeteer / Chrome
-  puppeteerExecutablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+  // Puppeteer yok; tarayicisiz (Baileys). Bu alan bilerek kaldirildi.
 };
 
 if (!config.panelToken) {
