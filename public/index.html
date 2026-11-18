@@ -121,6 +121,13 @@ label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacin
 .toggle::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#94a3b8;transition:all .2s}
 .toggle.on{background:var(--green2);border-color:var(--green)}
 .toggle.on::after{left:24px;background:#d1fae5}
+.toggle.block.on{background:#7f1d1d;border-color:#ef4444}
+.toggle.block.on::after{left:24px;background:#fecaca}
+.persona-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.chip{background:var(--panel2);border:1px solid var(--border-soft);color:var(--text);border-radius:20px;padding:5px 11px;font-size:11px;cursor:pointer;transition:all .15s}
+.chip:hover{border-color:var(--green);color:#a7f3d0}
+.blockcard{border-color:#3f1d1d !important}
+.blockchip{font-size:8.5px;background:#7f1d1d;color:#fecaca;border-radius:4px;padding:1px 5px;font-weight:800;letter-spacing:.5px}
 
 /* Suggestions grid */
 .suggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
@@ -233,14 +240,31 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
             <div class="aifield" id="askAnswer" style="margin-top:10px"></div>
           </div>
           <div class="card">
+            <h3>AI Kişilik <span style="text-transform:none;color:var(--faint)">— bu kişiye özel</span></h3>
+            <div class="persona-chips" id="personaChips">
+              <button class="chip" data-p="Samimi, gündelik ve esprili bir üslup kullan; emojileri nadiren ama yerinde kullan.">😊 Samimi</button>
+              <button class="chip" data-p="Profesyonel, saygılı ve resmi yaz; Bey/Hanım hitabı kullan, laubalilik yapma.">👔 Resmi</button>
+              <button class="chip" data-p="En fazla 1-2 cümleyle, net ve öz cevap ver; gereksiz laf yok.">⚡ Kısa &amp; Net</button>
+              <button class="chip" data-p="Uzun, ilgi dolu ve yumuşak bir ton kullan; detayları atlamadan nazikçe yaz.">💌 Uzun &amp; Nazik</button>
+            </div>
+            <textarea id="autoInstruction" placeholder="Örn: Anneme nazik ve uzun yaz; Burak'a sadece kısa ve net; patrona asla fiyat verme…"></textarea>
+            <p class="aifield" style="font-size:10.5px;color:var(--faint);margin-top:6px">Bu talimat hem cevap taslaklarına hem de (açıksa) otomatik cevaplara uygulanır.</p>
+            <button class="ghost" id="saveAutoBtn" style="margin-top:8px;width:100%;justify-content:center">Kişiliği Kaydet</button>
+          </div>
+          <div class="card">
             <h3>Otomatik Cevaplama</h3>
             <div class="switch">
-              <span class="aifield" id="autoLabel">Bu sohbette AI kendi kendine cevap versin</span>
+              <span class="aifield">AI onay sormadan direkt cevap versin</span>
               <div class="toggle" id="autoToggle" role="switch" aria-checked="false" tabindex="0"></div>
             </div>
-            <label>AI'ya talimatın</label>
-            <textarea id="autoInstruction" placeholder="Örn: Kısa ve net yaz, randevu için Cuma de, asla fiyat verme…"></textarea>
-            <button class="ghost" id="saveAutoBtn" style="margin-top:8px;width:100%;justify-content:center">Kaydet</button>
+          </div>
+          <div class="card blockcard">
+            <h3 style="color:#f87171">Kara Liste</h3>
+            <div class="switch">
+              <span class="aifield">AI bu sohbete <b>ASLA</b> cevap vermesin</span>
+              <div class="toggle block" id="blockToggle" role="switch" aria-checked="false" tabindex="0"></div>
+            </div>
+            <p class="aifield" style="font-size:10.5px;color:var(--faint);margin-top:8px">Kara listedeki sohbetlerde hiçbir cevap taslağı üretilmez ve otomatik cevap gönderilmez. Özetler kaydedilmeye devam eder.</p>
           </div>
         </div>
       </div>
@@ -371,7 +395,7 @@ function renderChatList() {
     <div class="chatitem ${state.selectedChat === c.id ? 'sel' : ''}" data-id="${esc(c.id)}">
       <div class="avatar">${esc(initials(c.name))}</div>
       <div style="min-width:0">
-        <div class="cname">${esc(c.name)}${c.auto_enabled ? '<span class="autochip">OTOMATİK</span>' : ''}${c.pending_suggestions ? `<span class="pendchip">${c.pending_suggestions} TASLAK</span>` : ''}</div>
+        <div class="cname">${esc(c.name)}${c.auto_enabled ? '<span class="autochip">OTOMATİK</span>' : ''}${c.blacklisted ? '<span class="blockchip">KARA LİSTE</span>' : ''}${c.pending_suggestions ? `<span class="pendchip">${c.pending_suggestions} TASLAK</span>` : ''}</div>
         <div class="cprev">${esc((c.summary || 'AI analizi bekleniyor…'))}</div>
       </div>
       <time>${c.last_message_at ? fmtTime(c.last_message_at) : ''}</time>
@@ -399,6 +423,8 @@ function renderAiRail(chat) {
   $('#autoInstruction').value = chat.auto_instruction || '';
   $('#autoToggle').classList.toggle('on', !!chat.auto_enabled);
   $('#autoToggle').setAttribute('aria-checked', chat.auto_enabled ? 'true' : 'false');
+  $('#blockToggle').classList.toggle('on', !!chat.blacklisted);
+  $('#blockToggle').setAttribute('aria-checked', chat.blacklisted ? 'true' : 'false');
 }
 
 async function loadMessages(id) {
@@ -457,13 +483,32 @@ $('#askBtn').addEventListener('click', async () => {
 });
 
 $('#autoToggle').addEventListener('click', () => { $('#autoToggle').classList.toggle('on'); });
+$('#blockToggle').addEventListener('click', async () => {
+  if (!state.selectedChat) return;
+  const willBlock = !$('#blockToggle').classList.contains('on');
+  try {
+    await api('/api/blocks/' + encodeURIComponent(state.selectedChat), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ blocked: willBlock }) });
+    $('#blockToggle').classList.toggle('on', willBlock);
+    toast(willBlock ? 'KARA LİSTEYE EKLENDİ — AI bu sohbete cevap vermeyecek' : 'Kara listeden çıkarıldı');
+    loadChats();
+  } catch (e) { toast('Hata: ' + e.message); }
+});
+
+// Hazir persona sablonlari — tiklayinca talimat alanini doldurur
+$('#personaChips').addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  $('#autoInstruction').value = chip.dataset.p;
+  toast('Kişilik taslağı alana eklendi — kaydedin');
+});
+
 $('#saveAutoBtn').addEventListener('click', async () => {
   if (!state.selectedChat) return;
   const enabled = $('#autoToggle').classList.contains('on');
   const instruction = $('#autoInstruction').value;
   try {
     await api('/api/rules/' + encodeURIComponent(state.selectedChat), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ enabled, instruction }) });
-    toast(enabled ? 'Otomatik cevaplama AÇILDI — AI bu sohbete kendisi yanıt verecek' : 'Otomatik cevaplama KAPATILDI');
+    toast('AI kişiliği kaydedildi' + (enabled ? ' — otomatik cevaplama AÇIK' : ''));
     loadChats(); loadStats();
   } catch (e) { toast('Hata: ' + e.message); }
 });

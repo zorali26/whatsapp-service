@@ -65,6 +65,12 @@ function init() {
       data TEXT UNIQUE NOT NULL,
       created_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS blocks (
+      chat_id TEXT PRIMARY KEY,
+      reason TEXT DEFAULT '',
+      created_at INTEGER NOT NULL
+    );
   `);
   return db;
 }
@@ -108,7 +114,8 @@ const queries = {
         (SELECT COUNT(*) FROM suggestions s WHERE s.chat_id = c.id AND s.status = 'pending') AS pending_suggestions,
         (SELECT MAX(timestamp) FROM messages m WHERE m.chat_id = c.id) AS last_message_at,
         COALESCE((SELECT enabled FROM rules r WHERE r.chat_id = c.id), 0) AS auto_enabled,
-        COALESCE((SELECT instruction FROM rules r WHERE r.chat_id = c.id), '') AS auto_instruction
+        COALESCE((SELECT instruction FROM rules r WHERE r.chat_id = c.id), '') AS auto_instruction,
+        COALESCE((SELECT 1 FROM blocks b WHERE b.chat_id = c.id), 0) AS blacklisted
       FROM chats c
       ORDER BY last_message_at DESC
     `).all();
@@ -145,6 +152,24 @@ const queries = {
   },
   getRule(chatId) {
     return db.prepare('SELECT * FROM rules WHERE chat_id = ?').get(chatId);
+  },
+  getBlock(chatId) {
+    return db.prepare('SELECT * FROM blocks WHERE chat_id = ?').get(chatId);
+  },
+  setBlock(chatId, reason) {
+    db.prepare(`
+      INSERT INTO blocks (chat_id, reason, created_at) VALUES (?, ?, ?)
+      ON CONFLICT(chat_id) DO UPDATE SET reason = excluded.reason
+    `).run(chatId, reason || '', Date.now());
+  },
+  removeBlock(chatId) {
+    db.prepare('DELETE FROM blocks WHERE chat_id = ?').run(chatId);
+  },
+  listBlocks() {
+    return db.prepare(`
+      SELECT b.*, c.name AS chat_name FROM blocks b
+      LEFT JOIN chats c ON c.id = b.chat_id
+    `).all();
   },
   setRule(chatId, enabled, instruction) {
     db.prepare(`

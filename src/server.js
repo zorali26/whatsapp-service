@@ -189,6 +189,18 @@ app.put('/api/rules/:chatId', (req, res) => {
   res.json({ ok: true });
 });
 
+// Kara liste (bu sohbete asla cevap verilmez)
+app.put('/api/blocks/:chatId', (req, res) => {
+  const { blocked, reason } = req.body || {};
+  if (blocked) queries.setBlock(req.params.chatId, reason || '');
+  else queries.removeBlock(req.params.chatId);
+  res.json({ ok: true });
+});
+
+app.get('/api/blocks', (req, res) => {
+  res.json(queries.listBlocks());
+});
+
 app.get('/api/rules', (req, res) => {
   res.json(queries.listRules());
 });

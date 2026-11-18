@@ -10,6 +10,8 @@ WhatsApp Web protokolünü **tarayıcısız** (Baileys, WebSocket) konuşur; Ren
 - Diğer sohbetler için onayınıza gelen **cevap taslakları**
 - **Telefonunuza bildirim**: site açıkken toast + sesli okuma (TTS), site kapalıyken Web Push (`🔔 Bildirimleri Aç`)
 - Profesyonel panel: canlı aktivite akışı, sohbet arama, iki panelli mesaj görünümü, AI soru-cevap, istatistikler
+- **Kara liste**: seçtiğiniz sohbetlerde AI hiçbir cevap üretmez
+- **Kişiye özel AI kişiliği**: her sohbete ayrı ton/talimat (örn. anneme nazik-uzun, Burak'a kısa-net)
 
 ---
 

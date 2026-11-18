@@ -16,13 +16,14 @@ async function analyzeAndMaybeRespond({ chatId, chatName, triggerWaId, silent, h
   if (recent.length === 0) return;
 
   const rule = queries.getRule(chatId);
+  const block = queries.getBlock(chatId);
 
   let analysis;
   try {
     analysis = await analyzeConversation({
       chatName,
       recentMessages: recent,
-      instruction: rule?.enabled ? rule.instruction : '',
+      instruction: rule?.instruction || '', // kisisel talimat her durumda AI'ya gider
     });
   } catch (e) {
     log('error', 'AI analizi basarisiz: ' + e.message);
@@ -30,6 +31,12 @@ async function analyzeAndMaybeRespond({ chatId, chatName, triggerWaId, silent, h
   }
 
   queries.updateChatSummary(chatId, analysis.summary, analysis.topic_direction);
+
+  // Kara liste: ozet guncellenir ama HICBIR cevap taslagi uretilmez, otomatik de gonderilmez
+  if (block) {
+    log('info', `Kara liste: ${chatName} icin cevap uretilmedi.`);
+    return;
+  }
   if (!analysis.suggested_reply) return;
 
   const base = {
