@@ -116,7 +116,26 @@ async function refreshStatus() {
 }
 setInterval(refreshStatus, 5000);
 
+// Acik mesaj panellerini ve kullanicinin yazdigi talimatlari koru
+window.__openMsgs = new Set();
+
+setInterval(() => {
+  const chatsTab = !$('#tab-chats').classList.contains('hidden');
+  const sugTab = !$('#tab-suggestions').classList.contains('hidden');
+  if (chatsTab) {
+    // Kullanici bir talimat alanına yazıyorsa ya da mesaj paneli açıksa yenileme yapma
+    const focused = document.activeElement && $('#chatList').contains(document.activeElement);
+    if (focused || window.__openMsgs.size > 0) return;
+    loadChats().catch(() => {});
+  } else if (sugTab) {
+    const focused = document.activeElement && $('#suggestionList').contains(document.activeElement);
+    if (focused) return;
+    loadSuggestions().catch(() => {});
+  }
+}, 3000);
+
 async function loadChats() {
+  window.__openMsgs.clear();
   const chats = await api('/api/chats');
   const el = $('#chatList');
   if (!chats.length) { el.innerHTML = '<div class="card muted">Henuz sohbet yok. WhatsApp baglandiktan sonra mesajlar burada gorunecek.</div>'; return; }
@@ -164,7 +183,8 @@ async function analyze(id) {
 }
 async function toggleMessages(id) {
   const box = $('#msgs-' + id);
-  if (!box.classList.contains('hidden')) { box.classList.add('hidden'); return; }
+  if (!box.classList.contains('hidden')) { box.classList.add('hidden'); window.__openMsgs.delete(id); return; }
+  window.__openMsgs.add(id);
   const msgs = await api('/api/chats/' + encodeURIComponent(id) + '/messages?limit=40');
   box.innerHTML = msgs.map(m => `
     <div class="msg ${m.from_me ? 'me' : ''}">
