@@ -238,6 +238,9 @@ const queries = {
   getMessageByWaId(waId) {
     return db.prepare('SELECT * FROM messages WHERE wa_id = ?').get(waId);
   },
+  deleteMessageByWaId(waId) {
+    return db.prepare('DELETE FROM messages WHERE wa_id = ?').run(waId);
+  },
   latestMessagesSince(ms) {
     return db.prepare(`
       SELECT m.*, c.name AS chat_name FROM messages m

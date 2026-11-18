@@ -180,6 +180,7 @@ app.post('/api/messages/delete', async (req, res) => {
     const { waId, target } = req.body || {};
     if (!waId) return res.status(400).json({ error: 'waId gerekli' });
     const result = await deleteMessage(waId, target || 'auto');
+    queries.deleteMessageByWaId(waId); // panoya/DB'ye de yansisin
     res.json(result);
   } catch (e) {
     res.status(500).json({ error: e.message });

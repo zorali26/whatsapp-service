@@ -195,7 +195,8 @@ async function start() {
   });
 
   sock.ev.on('messages.upsert', async ({ type, messages }) => {
-    if (type !== 'notify') return;
+    // "notify" = gelen mesaj, "append" = senin (telefondan ya da bottan) attigin mesajlar
+    if (type !== 'notify' && type !== 'append') return;
     for (const m of messages || []) {
       try {
         await handleMessage(m);
@@ -203,6 +204,17 @@ async function start() {
         log('error', 'Mesaj islenirken hata: ' + e.message);
       }
     }
+  });
+
+  // Telefonunda ya da karsi tarafinda silinen mesajlari veritabanindan da kaldir
+  sock.ev.on('message-delete', (item) => {
+    try {
+      const id = item?.key?.id || item?.key?.id;
+      if (id) {
+        queries.deleteMessageByWaId(id);
+        log('info', 'Silinen mesaj DBden kaldirildi: ' + id);
+      }
+    } catch (_) { /* sessiz */ }
   });
 
   // Baglanti acildiginda gecmis mesajlar gelirse sessizce kaydet (AI cagrisi yapma)
@@ -253,7 +265,12 @@ async function humanSendMessage(chatId, body) {
   const typingTime = Math.min(Math.max(body.length * config.typingPerCharMs, 1500), 12000);
   await sleep(typingTime + Math.random() * 1500);
   await sock.sendPresenceUpdate('paused', chatId).catch(() => {});
-  return sock.sendMessage(chatId, { text: body });
+  const sent = await sock.sendMessage(chatId, { text: body });
+  // Mesaji kaydet (append eventi tetiklenmezse de garantide kalalim)
+  if (sent) {
+    handleMessage(sent, { silent: true }).catch(() => {});
+  }
+  return sent;
 }
 
 async function humanAutoReply(chatId, body) {
