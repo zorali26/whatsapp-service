@@ -53,7 +53,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .viewhead p{color:var(--muted);font-size:12px;margin-top:3px}
 
 /* Cards / stats */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
 .stat{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}
 .stat::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad);opacity:.7}
 .stat .lbl{font-size:10px;letter-spacing:1.4px;color:var(--muted);text-transform:uppercase;font-weight:700}
@@ -128,6 +128,18 @@ label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacin
 
 /* Suggestions grid */
 .suggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.pinrow{display:flex;align-items:center;gap:6px}
+.pinbtn{background:transparent;border:0;color:var(--faint);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:6px;opacity:.55}
+.pinbtn:hover{opacity:1;background:var(--panel2)}
+.pinbtn.on{color:var(--amber);opacity:1}
+.searchres{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto}
+.searchrow{background:var(--panel2);border:1px solid var(--border-soft);border-radius:10px;padding:9px 11px;cursor:pointer;transition:border-color .15s}
+.searchrow:hover{border-color:var(--green)}
+.searchrow b{font-size:11px;color:var(--green)}
+.searchrow span{display:block;font-size:12px;color:#c4d0e2;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.settingsgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1000px}
+.turnrow{display:flex;align-items:center;gap:14px;margin-top:10px}
+@media(max-width:900px){.settingsgrid{grid-template-columns:1fr}}
 .sugcard{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:8px}
 .sughead{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .sughead b{font-size:13px}
@@ -188,6 +200,7 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
       <button class="navbtn" data-view="chats"><span class="ic">☰</span>Sohbetlerim</button>
       <button class="navbtn" data-view="suggestions"><span class="ic">✦</span>Onay Bekleyenler<span class="badge" id="sugBadge" style="display:none">0</span></button>
       <button class="navbtn" data-view="logs"><span class="ic">⌗</span>Kayıtlar</button>
+      <button class="navbtn" data-view="settings"><span class="ic">⚙</span>Ayarlar</button>
     </nav>
     <div class="sidefoot">
       <div class="statuspill"><div class="dot" id="statusDot"></div><span id="statusText">Bağlanıyor…</span></div>
@@ -210,6 +223,8 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
         <div class="stat"><div class="lbl">Bugünkü Mesaj</div><div class="val" id="st-today">—</div><div class="sub">son 24 saat</div></div>
         <div class="stat"><div class="lbl">Onay Bekleyen</div><div class="val" id="st-pending">—</div><div class="sub">cevap taslağı</div></div>
         <div class="stat"><div class="lbl">Otomatik Kurgu</div><div class="val" id="st-auto">—</div><div class="sub">kendi kendine cevaplayan</div></div>
+        <div class="stat"><div class="lbl">Yanıt Bekleyen</div><div class="val" id="st-waiting">—</div><div class="sub">sana yazılan, cevapsız</div></div>
+        <div class="stat"><div class="lbl">AI Modeli</div><div class="val" id="st-model" style="font-size:16px;line-height:1.35;margin-top:8px">—</div><div class="sub">DeepSeek</div></div>
       </div>
       <div class="grid2">
         <div class="card">
@@ -217,15 +232,11 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
           <div class="feed" id="activityFeed"><div class="empty">Henüz aktivite yok. WhatsApp bağlıysa mesajlar buraya düşer.</div></div>
         </div>
         <div class="card">
-          <h3>Nasıl Çalışır?</h3>
-          <div class="aifield" style="line-height:1.9">
-            1. AI senin ağzınla yazar: <b>kısa, öz, küçük harflerle, noktalama işaretsiz, emoji kullanmadan</b>.<br>
-            2. Seni uzatmak isteyene <b>"şu an müsait değilim"</b> ile kısa kapatır; bilgi verene <b>"tamam"</b> yazar; basit soruya kısa cevap verir.<br>
-            3. Her gelen mesajda sohbetin <b>özetini + konunun gittiği yönü</b> çıkarır.<br>
-            4. <b>Otomatik</b> açtığın sohbetlere onay sormadan direkt cevap gönderir.<br>
-            5. Diğerleri <b>Onay Bekleyenler</b>'e düşer — tek tıkla gönder.<br>
-            6. <b>🔊 Sesli Okuma</b> gelen mesajları sana okur; <b>🔔 Bildirimleri Aç</b> ile site kapalıyken bile bildirim gelir.
-          </div>
+          <h3>Mesajlarda Ara</h3>
+          <input type="text" id="globalSearch" placeholder="Tüm sohbetlerde mesaj ara…" />
+          <div class="searchres" id="searchResults" style="margin-top:8px"></div>
+          <h3 style="margin-top:16px">Sana Cevap Bekleyenler</h3>
+          <div class="feed" id="pendingReplies" style="max-height:230px"><div class="empty">Bekleyen cevap yok 🎉</div></div>
         </div>
       </div>
     </section>
@@ -297,6 +308,46 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
       <div class="suggrid" id="sugGrid"></div>
     </section>
 
+    <!-- ============ SETTINGS ============ -->
+    <section class="view" id="view-settings">
+      <div class="viewhead">
+        <div><h2>Ayarlar</h2><p>AI modeli, sessiz saatler, yedekleme ve sistem</p></div>
+      </div>
+      <div class="settingsgrid">
+        <div class="card">
+          <h3>AI Modeli</h3>
+          <select id="modelSelect">
+            <option value="deepseek-chat">deepseek-chat — hızlı &amp; ekonomik</option>
+            <option value="deepseek-reasoner">deepseek-reasoner — daha derin &amp; kaliteli</option>
+          </select>
+          <p class="aifield" style="font-size:11px;color:var(--faint);margin-top:8px">Değişiklik anında kaydedilir ve bir sonraki AI cevabından itibaren geçerlidir.</p>
+        </div>
+        <div class="card">
+          <h3>Sessiz Saatler</h3>
+          <div class="switch">
+            <span class="aifield">Açıksa, bu saatler arasında otomatik cevap VERMEZ (onaya düşer)</span>
+            <div class="toggle" id="quietToggle" role="switch" aria-checked="false" tabindex="0"></div>
+          </div>
+          <div class="turnrow">
+            <label style="margin:0">Başlangıç</label>
+            <select id="quietStart" style="width:110px"></select>
+            <label style="margin:0">Bitiş</label>
+            <select id="quietEnd" style="width:110px"></select>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Yedek Al</h3>
+          <p class="aifield" style="font-size:11px;color:var(--muted)">Render Free'de her deploy veritabanını siler. Bu yedek: tüm sohbetler, mesajlar, kurallar, kara liste — JSON. Haftada bir indirin.</p>
+          <a class="btn" href="/api/backup" style="text-decoration:none;margin-top:8px">⬇ Yedeği İndir (JSON)</a>
+        </div>
+        <div class="card blockcard">
+          <h3 style="color:#f87171">Tehlike Bölgesi</h3>
+          <p class="aifield" style="font-size:11px;color:var(--muted)">Tüm mesajlar, sohbetler, kurallar ve ayarlar silinir. Geri alınamaz.</p>
+          <button class="danger" id="resetBtn" style="margin-top:8px;font-size:12px;padding:8px 12px">Veritabanını Sıfırla</button>
+        </div>
+      </div>
+    </section>
+
     <!-- ============ LOGS ============ -->
     <section class="view" id="view-logs">
       <div class="viewhead">
@@ -353,6 +404,7 @@ $$('.navbtn').forEach(btn => btn.addEventListener('click', () => {
   if (view === 'chats') { if (window.innerWidth <= 900) $('#view-chats').classList.remove('show-detail'); loadChats(); }
   if (view === 'suggestions') loadSuggestions();
   if (view === 'logs') loadLogs();
+  if (view === 'settings') loadSettings();
 }));
 
 /* ---------- Status ---------- */
@@ -374,9 +426,57 @@ async function loadStats() {
     $('#st-today').textContent = s.todayMessages;
     $('#st-pending').textContent = s.pending;
     $('#st-auto').textContent = s.autoOn;
+    $('#st-waiting').textContent = s.waiting ?? '—';
     const badge = $('#sugBadge');
     if (s.pending > 0) { badge.textContent = s.pending; badge.style.display = ''; } else badge.style.display = 'none';
   } catch (_) {}
+  try {
+    const settings = await api('/api/settings');
+    $('#st-model').textContent = (settings.model || 'deepseek-chat').replace('deepseek-', '');
+  } catch (_) {}
+}
+
+async function loadPendingReplies() {
+  try {
+    const items = await api('/api/pending-replies');
+    const box = $('#pendingReplies');
+    if (!items.length) { box.innerHTML = '<div class="empty">Bekleyen cevap yok 🎉</div>'; return; }
+    box.innerHTML = items.map(m => `
+      <div class="feeditem" style="cursor:pointer" onclick="goToChat('${esc(m.chat_id)}')">
+        <div class="fi-in">⏱</div>
+        <div><b>${esc(m.chat_name)}</b><span>${esc((m.body || '(medya)').slice(0, 90))}</span></div>
+        <time>${fmtTime(m.timestamp)}</time>
+      </div>`).join('');
+  } catch (_) {}
+}
+
+/* Global arama + sohbete git */
+let searchTimer = null;
+$('#globalSearch').addEventListener('input', (e) => {
+  clearTimeout(searchTimer);
+  const q = e.target.value.trim();
+  searchTimer = setTimeout(async () => {
+    const box = $('#searchResults');
+    if (q.length < 2) { box.innerHTML = ''; return; }
+    try {
+      const items = await api('/api/search?q=' + encodeURIComponent(q));
+      if (!items.length) { box.innerHTML = '<div class="empty">Sonuç bulunamadı.</div>'; return; }
+      box.innerHTML = items.map(m => `
+        <div class="searchrow" onclick="goToChat('${esc(m.chat_id)}')">
+          <b>${esc(m.chat_name)} · ${fmtTime(m.timestamp)}</b>
+          <span>${esc(m.body || '(medya)')}</span>
+        </div>`).join('');
+    } catch (_) { box.innerHTML = ''; }
+  }, 280);
+});
+function goToChat(id) {
+  $$('.navbtn').forEach(b => b.classList.remove('active'));
+  $('.navbtn[data-view="chats"]').classList.add('active');
+  $$('.view').forEach(v => v.classList.remove('active'));
+  $('#view-chats').classList.add('active');
+  state.view = 'chats';
+  $('#view-chats').classList.remove('show-detail');
+  loadChats().then(() => selectChat(id));
 }
 async function loadActivity() {
   try {
@@ -391,7 +491,7 @@ async function loadActivity() {
       </div>`).join('');
   } catch (_) {}
 }
-async function loadDashboard() { await Promise.all([loadStats(), loadActivity()]); }
+async function loadDashboard() { await Promise.all([loadStats(), loadActivity(), loadPendingReplies()]); }
 
 /* ---------- Chats ---------- */
 let chatsFilter = '';
@@ -417,8 +517,24 @@ function renderChatList() {
         <div class="cprev">${esc((c.summary || 'AI analizi bekleniyor…'))}</div>
       </div>
       <time>${c.last_message_at ? fmtTime(c.last_message_at) : ''}</time>
+      <button class="pinbtn ${c.pinned ? 'on' : ''}" title="${c.pinned ? 'Sabitlemeyi kaldır' : 'Sohbeti sabitle'}" data-pin="${esc(c.id)}">📌</button>
     </div>`).join('');
-  $$('.chatitem', list).forEach(el => el.addEventListener('click', () => selectChat(el.dataset.id)));
+  $$('.chatitem', list).forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.pinbtn')) return;
+      selectChat(el.dataset.id);
+    });
+  });
+  $$('.pinbtn', list).forEach(btn => btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const id = btn.dataset.pin;
+    const currentlyOn = btn.classList.contains('on');
+    try {
+      await api('/api/chats/' + encodeURIComponent(id) + '/pin', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pinned: !currentlyOn }) });
+      toast(!currentlyOn ? 'Sohbet sabitlendi' : 'Sabitleme kaldırıldı');
+      loadChats();
+    } catch (err) { toast('Hata: ' + err.message); }
+  }));
 }
 
 $('#backToChats').addEventListener('click', () => { $('#view-chats').classList.remove('show-detail'); });
@@ -648,6 +764,47 @@ async function poll() {
   } catch (_) {}
 }
 setInterval(poll, 2500);
+
+/* ---------- Ayarlar ---------- */
+const hourOpts = Array.from({ length: 24 }, (_, h) => `<option value="${h}">${String(h).padStart(2, '0')}:00</option>`).join('');
+$('#quietStart').innerHTML = hourOpts;
+$('#quietEnd').innerHTML = hourOpts;
+
+async function loadSettings() {
+  try {
+    const s = await api('/api/settings');
+    $('#modelSelect').value = s.model || 'deepseek-chat';
+    $('#quietToggle').classList.toggle('on', s.quiet_enabled === '1');
+    $('#quietToggle').setAttribute('aria-checked', s.quiet_enabled === '1' ? 'true' : 'false');
+    $('#quietStart').value = String(s.quiet_start ?? '23');
+    $('#quietEnd').value = String(s.quiet_end ?? '7');
+  } catch (e) { toast('Ayarlar yüklenemedi'); }
+}
+$('#modelSelect').addEventListener('change', saveSettings);
+$('#quietStart').addEventListener('change', saveSettings);
+$('#quietEnd').addEventListener('change', saveSettings);
+$('#quietToggle').addEventListener('click', () => { $('#quietToggle').classList.toggle('on'); saveSettings(); });
+async function saveSettings() {
+  const body = {
+    model: $('#modelSelect').value,
+    quiet_enabled: $('#quietToggle').classList.contains('on') ? '1' : '0',
+    quiet_start: $('#quietStart').value,
+    quiet_end: $('#quietEnd').value,
+  };
+  try {
+    await api('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    toast('Ayarlar kaydedildi');
+    loadStats();
+  } catch (e) { toast('Hata: ' + e.message); }
+}
+$('#resetBtn').addEventListener('click', async () => {
+  const ok = prompt('TÜM veriler silinecek. Onaylıyorsanız SIL yazın:');
+  if (ok !== 'SIL') { toast('İptal edildi'); return; }
+  try {
+    await api('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: 'SIL' }) });
+    toast('Veritabanı sıfırlandı');
+  } catch (e) { toast('Hata: ' + e.message); }
+});
 
 /* ---------- Boot ---------- */
 refreshStatus();

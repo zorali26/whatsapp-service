@@ -12,6 +12,10 @@ WhatsApp Web protokolünü **tarayıcısız** (Baileys, WebSocket) konuşur; Ren
 - Profesyonel panel: canlı aktivite akışı, sohbet arama, iki panelli mesaj görünümü, AI soru-cevap, istatistikler
 - **Kara liste**: seçtiğiniz sohbetlerde AI hiçbir cevap üretmez
 - **Kişiye özel AI kişiliği**: her sohbete ayrı ton/talimat (örn. anneme nazik-uzun, Burak'a kısa-net)
+- **Sohbet sabitleme**, **global mesaj arama**, **cevap bekleyenler** listesi
+- **Sessiz saatler** (örn. 23:00–07:00 arası otomatik cevap yok, onaya düşer)
+- **AI model değişimi** (deepseek-chat ↔ deepseek-reasoner) panelden
+- **JSON yedek indirme** (Render Free redeploy'da veritabanı silinir — bunu kullanın)
 
 ---
 

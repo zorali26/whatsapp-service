@@ -1,4 +1,9 @@
 const config = require('./config');
+const { queries } = require('./db');
+
+function currentModel() {
+  try { return queries.getSetting('model') || config.deepseek.model; } catch (_) { return config.deepseek.model; }
+}
 
 /**
  * DeepSeek API (OpenAI-uyumlu chat completions).
@@ -9,7 +14,7 @@ async function chatCompletion(messages, { temperature = 0.7, maxTokens = 1200, j
     throw new Error('DEEPSEEK_API_KEY tanimli degil. .env dosyasina ekleyin.');
   }
   const body = {
-    model: config.deepseek.model,
+    model: currentModel(),
     messages,
     temperature,
     max_tokens: maxTokens,

@@ -36,6 +36,58 @@ app.get('/api/status', (req, res) => {
   res.json(getStatus());
 });
 
+// Mesaj aramasi (tum sohbetlerde)
+app.get('/api/search', (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (q.length < 2) return res.json([]);
+  res.json(queries.searchMessages(q.slice(0, 80)));
+});
+
+// Cevap bekleyen sohbetler (sen yazdigini son mesaji atmayanlar)
+app.get('/api/pending-replies', (req, res) => {
+  res.json(queries.pendingReplies());
+});
+
+// Sohbet sabitle / sabitlemeyi kaldir
+app.post('/api/chats/:id/pin', (req, res) => {
+  queries.setPinned(req.params.id, !!(req.body && req.body.pinned));
+  res.json({ ok: true });
+});
+
+// Ayarlar (AI modeli, sessiz saatler)
+const ALLOWED_SETTINGS = new Set(['model', 'quiet_enabled', 'quiet_start', 'quiet_end']);
+app.get('/api/settings', (req, res) => {
+  res.json(queries.allSettings());
+});
+app.put('/api/settings', (req, res) => {
+  const body = req.body || {};
+  for (const [key, value] of Object.entries(body)) {
+    if (!ALLOWED_SETTINGS.has(key)) continue;
+    if (key === 'quiet_enabled' && !['0', '1'].includes(String(value))) continue;
+    if ((key === 'quiet_start' || key === 'quiet_end') && isNaN(parseFloat(value))) continue;
+    if (key === 'model' && !['deepseek-chat', 'deepseek-reasoner'].includes(String(value))) continue;
+    queries.setSetting(key, value);
+  }
+  res.json({ ok: true });
+});
+
+// YEDEK — tum verileri JSON indir (Render Free'de redeploy siler!)
+app.get('/api/backup', (req, res) => {
+  res.setHeader('Content-Disposition', 'attachment; filename="wa-asistan-yedek.json"');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.send(JSON.stringify(queries.exportAll()));
+});
+
+// SIFIRLAMA — tum verileri eler (panelden istenmez ama dursun)
+app.post('/api/reset', (req, res) => {
+  if ((req.body?.confirm || '') !== 'SIL') {
+    return res.status(400).json({ error: 'Onay gerekli: {"confirm":"SIL"}' });
+  }
+  queries.resetAll();
+  log('info', 'Tum veriler sifirlandi.');
+  res.json({ ok: true });
+});
+
 // Dashboard istatistikleri
 app.get('/api/stats', (req, res) => {
   res.json(queries.stats());

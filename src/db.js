@@ -80,12 +80,18 @@ function init() {
     );
   `);
 
-  // Migrasyon: eski veritabanlarina living_note kolonu ekle
+  // Migrasyon: eski veritabanlarina living_note + pinned kolonu ekle
   try {
     db.prepare('ALTER TABLE chats ADD COLUMN living_note TEXT').run();
   } catch (e) {
     if (!/duplicate column/i.test(String(e.message))) throw e;
   }
+  try {
+    db.prepare('ALTER TABLE chats ADD COLUMN pinned INTEGER DEFAULT 0').run();
+  } catch (e) {
+    if (!/duplicate column/i.test(String(e.message))) throw e;
+  }
+  db.exec('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)');
   return db;
 }
 
@@ -129,9 +135,10 @@ const queries = {
         (SELECT MAX(timestamp) FROM messages m WHERE m.chat_id = c.id) AS last_message_at,
         COALESCE((SELECT enabled FROM rules r WHERE r.chat_id = c.id), 0) AS auto_enabled,
         COALESCE((SELECT instruction FROM rules r WHERE r.chat_id = c.id), '') AS auto_instruction,
-        COALESCE((SELECT 1 FROM blocks b WHERE b.chat_id = c.id), 0) AS blacklisted
+        COALESCE((SELECT 1 FROM blocks b WHERE b.chat_id = c.id), 0) AS blacklisted,
+        COALESCE(c.pinned, 0) AS pinned
       FROM chats c
-      ORDER BY last_message_at DESC
+      ORDER BY COALESCE(c.pinned, 0) DESC, last_message_at DESC
     `).all();
   },
   updateChatSummary(chatId, summary, topicDirection) {
@@ -252,12 +259,71 @@ const queries = {
   },
   stats() {
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    const waiting = db.prepare(`
+      SELECT COUNT(*) AS c FROM messages m
+      WHERE m.rowid IN (SELECT MAX(rowid) FROM messages GROUP BY chat_id) AND m.from_me = 0
+    `).get().c;
     return {
       chats: db.prepare('SELECT COUNT(*) AS c FROM chats').get().c,
       todayMessages: db.prepare('SELECT COUNT(*) AS c FROM messages WHERE timestamp > ?').get(dayAgo).c,
       pending: db.prepare("SELECT COUNT(*) AS c FROM suggestions WHERE status = 'pending'").get().c,
       autoOn: db.prepare('SELECT COUNT(*) AS c FROM rules WHERE enabled = 1').get().c,
+      waiting,
     };
+  },
+  searchMessages(q) {
+    const like = '%' + String(q).replace(/[%_]/g, '') + '%';
+    return db.prepare(`
+      SELECT m.*, c.name AS chat_name FROM messages m
+      JOIN chats c ON c.id = m.chat_id
+      WHERE m.body LIKE ?
+      ORDER BY m.timestamp DESC
+      LIMIT 30
+    `).all(like);
+  },
+  pendingReplies() {
+    return db.prepare(`
+      SELECT m.chat_id, c.name AS chat_name, m.body, m.timestamp FROM messages m
+      JOIN chats c ON c.id = m.chat_id
+      WHERE m.rowid IN (SELECT MAX(rowid) FROM messages GROUP BY chat_id) AND m.from_me = 0
+      ORDER BY m.timestamp ASC
+      LIMIT 12
+    `).all();
+  },
+  setPinned(chatId, pinned) {
+    db.prepare('UPDATE chats SET pinned = ?, updated_at = ? WHERE id = ?').run(pinned ? 1 : 0, Date.now(), chatId);
+  },
+  getSetting(key) {
+    return db.prepare('SELECT value FROM settings WHERE key = ?').get(key)?.value ?? null;
+  },
+  setSetting(key, value) {
+    db.prepare(`
+      INSERT INTO settings (key, value) VALUES (?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `).run(key, String(value ?? ''));
+  },
+  allSettings() {
+    const rows = db.prepare('SELECT key, value FROM settings').all();
+    const out = {};
+    for (const r of rows) out[r.key] = r.value;
+    return out;
+  },
+  exportAll() {
+    return {
+      exported_at: Date.now(),
+      chats: db.prepare('SELECT * FROM chats').all(),
+      messages: db.prepare('SELECT * FROM messages ORDER BY timestamp ASC').all(),
+      suggestions: db.prepare('SELECT * FROM suggestions').all(),
+      rules: db.prepare('SELECT * FROM rules').all(),
+      blocks: db.prepare('SELECT * FROM blocks').all(),
+      contacts: db.prepare('SELECT * FROM contacts').all(),
+      settings: db.prepare('SELECT * FROM settings').all(),
+    };
+  },
+  resetAll() {
+    for (const t of ['messages', 'suggestions', 'chats', 'rules', 'blocks', 'contacts', 'logs', 'push_subscriptions']) {
+      db.prepare(`DELETE FROM ${t}`).run();
+    }
   },
   activityFeed(limit) {
     return db.prepare(`

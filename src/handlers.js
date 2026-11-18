@@ -42,6 +42,17 @@ async function analyzeAndMaybeRespond({ chatId, chatName, triggerWaId, silent, h
   }
   if (!analysis.suggested_reply) return;
 
+  // Sessiz saatler: aktifse otomatik gönderme, cevabı onay listesine düş
+  const quietEnabled = queries.getSetting('quiet_enabled') === '1';
+  let inQuiet = false;
+  if (quietEnabled) {
+    const h = new Date().getHours() + new Date().getMinutes() / 60;
+    const start = parseFloat(queries.getSetting('quiet_start') || '23');
+    const end = parseFloat(queries.getSetting('quiet_end') || '7');
+    inQuiet = start > end ? (h >= start || h < end) : (h >= start && h < end);
+    if (inQuiet) log('info', `Sessiz saat (${start}:00-${end}:00) — ${chatName} cevabi onaya alindi`);
+  }
+
   const base = {
     chat_id: chatId,
     trigger_wa_id: triggerWaId,
@@ -51,7 +62,7 @@ async function analyzeAndMaybeRespond({ chatId, chatName, triggerWaId, silent, h
     created_at: Date.now(),
   };
 
-  if (rule?.enabled) {
+  if (rule?.enabled && !inQuiet) {
     try {
       await humanSend(chatId, analysis.suggested_reply);
       queries.createSuggestion({ ...base, status: 'sent', sent_at: Date.now() });
