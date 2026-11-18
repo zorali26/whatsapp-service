@@ -258,6 +258,8 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
             <div class="aifield" id="aiSummary">—</div>
             <label>Konunun Gittiği Yön</label>
             <div class="aifield" id="aiDirection">—</div>
+            <label>AI Hafıza <span style="text-transform:none;color:var(--faint)">(geliştiriliyor — sohbetten öğrendikleri)</span></label>
+            <div class="aifield" id="aiMemory" style="font-size:11px;color:var(--muted);max-height:160px;overflow-y:auto;white-space:pre-wrap">—</div>
             <button class="ghost" id="analyzeBtn" style="margin-top:10px;width:100%;justify-content:center">✦ Şimdi Özetle</button>
           </div>
           <div class="card">
@@ -439,6 +441,7 @@ function renderAiRail(chat) {
   if (!chat) return;
   $('#aiSummary').textContent = chat.summary || 'Henüz özet yok — "Şimdi Özetle"ye basın.';
   $('#aiDirection').textContent = chat.topic_direction || '—';
+  $('#aiMemory').textContent = chat.living_note || '(henüz yok — gelen mesajlarla birikir)';
   $('#autoToggle').classList.toggle('on', !!chat.auto_enabled);
   $('#autoToggle').setAttribute('aria-checked', chat.auto_enabled ? 'true' : 'false');
   $('#blockToggle').classList.toggle('on', !!chat.blacklisted);
@@ -485,6 +488,7 @@ $('#analyzeBtn').addEventListener('click', async () => {
     const r = await api('/api/chats/' + encodeURIComponent(state.selectedChat) + '/analyze', { method:'POST' });
     $('#aiSummary').textContent = r.summary || '—';
     $('#aiDirection').textContent = r.topic_direction || '—';
+    if (r.note) $('#aiMemory').textContent = r.note;
     toast('Analiz tamamlandı'); loadChats();
   } catch (e) { toast('Hata: ' + e.message); }
 });

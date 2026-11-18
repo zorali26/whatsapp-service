@@ -101,15 +101,18 @@ app.post('/api/chats/:id/analyze', async (req, res) => {
     const chats = queries.listChats();
     const chat = chats.find((c) => c.id === chatId);
     if (!chat) return res.status(404).json({ error: 'Sohbet bulunamadi' });
-    const recent = queries.recentMessages(chatId, 40);
+    const recent = queries.recentMessages(chatId, 60);
     if (recent.length === 0) return res.status(400).json({ error: 'Mesaj yok' });
     const rule = queries.getRule(chatId);
+    const memory = queries.getChatNote(chatId);
     const analysis = await analyzeConversation({
       chatName: chat.name,
       recentMessages: recent,
       instruction: rule?.instruction || '',
+      memory,
     });
     queries.updateChatSummary(chatId, analysis.summary, analysis.topic_direction);
+    if (analysis.note) queries.updateChatNote(chatId, analysis.note);
     res.json(analysis);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -124,8 +127,9 @@ app.post('/api/chats/:id/ask', async (req, res) => {
     const chatId = req.params.id;
     const chat = queries.listChats().find((c) => c.id === chatId);
     if (!chat) return res.status(404).json({ error: 'Sohbet bulunamadi' });
-    const recent = queries.recentMessages(chatId, 40);
-    const answer = await askAboutChat({ chatName: chat.name, recentMessages: recent, question });
+    const recent = queries.recentMessages(chatId, 60);
+    const memory = queries.getChatNote(chatId);
+    const answer = await askAboutChat({ chatName: chat.name, recentMessages: recent, question, memory });
     res.json({ answer });
   } catch (e) {
     res.status(500).json({ error: e.message });

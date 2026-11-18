@@ -79,6 +79,13 @@ function init() {
       phone TEXT DEFAULT ''
     );
   `);
+
+  // Migrasyon: eski veritabanlarina living_note kolonu ekle
+  try {
+    db.prepare('ALTER TABLE chats ADD COLUMN living_note TEXT').run();
+  } catch (e) {
+    if (!/duplicate column/i.test(String(e.message))) throw e;
+  }
   return db;
 }
 
@@ -132,6 +139,13 @@ const queries = {
       UPDATE chats SET summary = ?, topic_direction = ?, summary_updated_at = ?, updated_at = ?
       WHERE id = ?
     `).run(summary, topicDirection, Date.now(), Date.now(), chatId);
+  },
+  updateChatNote(chatId, note) {
+    db.prepare('UPDATE chats SET living_note = ?, updated_at = ? WHERE id = ?')
+      .run(String(note || '').slice(0, 4000), Date.now(), chatId);
+  },
+  getChatNote(chatId) {
+    return db.prepare('SELECT living_note FROM chats WHERE id = ?').get(chatId)?.living_note || '';
   },
   createSuggestion(s) {
     db.prepare(`

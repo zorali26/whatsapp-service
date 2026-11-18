@@ -44,17 +44,19 @@ function formatTranscript(messages) {
  * Sohbetin ozetini, konunun gittigi yonu ve cevap taslagini uretir.
  * JSON doner: { summary, topic_direction, suggested_reply }
  */
-async function analyzeConversation({ chatName, recentMessages, instruction }) {
+async function analyzeConversation({ chatName, recentMessages, instruction, memory }) {
   const transcript = formatTranscript(recentMessages);
 
   const system = [
     `Sen ${config.ownerName}'in WhatsApp asistanisin — onun yerine mesaj yazarsin.`,
     'Sana "mehmet ali" veya "mali" diye hitap edilebilir — bu hep ayni kisi, sen.',
     `Yazma tarzın: ${config.assistantStyle}`,
+    memory ? `SOHBET HAFIZASI (şimdiye kadarki her şeyi buradan bil — bu kişiyle aranızdaki tüm geçmişi kapsar):\n${memory}` : '(Henüz sohbet hafızası oluşmadı — bu ilk analiz.)',
     'Cevap 1-6 kelime ya da tek kisa cumle olsun.',
     instruction ? `Bu sohbet icin talimat: ${instruction}` : '',
-    'Yalnizca JSON don: {"summary": "...", "topic_direction": "...", "suggested_reply": "..."}',
+    'Yalnizca JSON don: {"summary": "...", "topic_direction": "...", "suggested_reply": "...", "note": "..."}',
     'summary ve topic_direction Turkce, kisa (1-3 cumle) olsun.',
+    'note: bu sohbetin KALICI hafıza notunun GUNCEL, guncellenmis hali — kisi kim (ad, iliskisi), onemli kalıcı bilgiler (sozler, planlar, konulan tarihler, sevgiler/istekler, hassasiyetler), tarzı. Eski hafizayi kaybetme, uzerine ekle/birlestir, gereksiz tekrarlari sadelestir; en fazla ~300 kelime. Bu not bir dahaki analizde sana SOHBET HAFIZASI olarak geri verilecek.',
   ].filter(Boolean).join('\n');
 
   const user = `Sohbet: ${chatName}\n\nSon mesajlar:\n${transcript}\n\nJSON dondur.`;
@@ -73,19 +75,20 @@ async function analyzeConversation({ chatName, recentMessages, instruction }) {
       summary: (parsed.summary || '').slice(0, 2000),
       topic_direction: (parsed.topic_direction || '').slice(0, 2000),
       suggested_reply: (parsed.suggested_reply || '').slice(0, 2000),
+      note: (parsed.note || '').slice(0, 4000),
     };
   } catch (_) {
     // Model JSON yerine duz metin dondiyse en azindan cevap taslagi olarak kullan
-    return { summary: '', topic_direction: '', suggested_reply: raw.slice(0, 2000) };
+    return { summary: '', topic_direction: '', suggested_reply: raw.slice(0, 2000), note: '' };
   }
 }
 
 /** Serbest soru: "Bu sohbette konu nereye gidiyor?" gibi sorular icin. */
-async function askAboutChat({ chatName, recentMessages, question }) {
+async function askAboutChat({ chatName, recentMessages, question, memory }) {
   const transcript = formatTranscript(recentMessages);
   return chatCompletion(
     [
-      { role: 'system', content: `Kullanicinin kisisel WhatsApp asistanisin. ${config.ownerName} adina dusunuyorsun. Turkce, kisa ve net cevap ver.` },
+      { role: 'system', content: `Kullanicinin kisisel WhatsApp asistanisin. ${config.ownerName} adina dusunuyorsun. Turkce, kisa ve net cevap ver.${memory ? '\nSOHBET HAFIZASI:\n' + memory : ''}` },
       { role: 'user', content: `Sohbet: ${chatName}\n\nGecmis:\n${transcript}\n\nSoru: ${question}` },
     ],
     { temperature: 0.4, maxTokens: 700 }

@@ -12,11 +12,12 @@ const { notifyAll } = require('./push');
 async function analyzeAndMaybeRespond({ chatId, chatName, triggerWaId, silent, humanSend }) {
   if (silent) return;
 
-  const recent = queries.recentMessages(chatId, 40);
+  const recent = queries.recentMessages(chatId, 60); // daha genis pencere — daha fazla hakim
   if (recent.length === 0) return;
 
   const rule = queries.getRule(chatId);
   const block = queries.getBlock(chatId);
+  const memory = queries.getChatNote(chatId);
 
   let analysis;
   try {
@@ -24,6 +25,7 @@ async function analyzeAndMaybeRespond({ chatId, chatName, triggerWaId, silent, h
       chatName,
       recentMessages: recent,
       instruction: rule?.instruction || '', // kisisel talimat her durumda AI'ya gider
+      memory,
     });
   } catch (e) {
     log('error', 'AI analizi basarisiz: ' + e.message);
@@ -31,6 +33,7 @@ async function analyzeAndMaybeRespond({ chatId, chatName, triggerWaId, silent, h
   }
 
   queries.updateChatSummary(chatId, analysis.summary, analysis.topic_direction);
+  if (analysis.note) queries.updateChatNote(chatId, analysis.note);
 
   // Kara liste: ozet guncellenir ama HICBIR cevap taslagi uretilmez, otomatik de gonderilmez
   if (block) {
