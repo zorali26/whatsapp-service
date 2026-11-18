@@ -515,7 +515,25 @@ $('#askBtn').addEventListener('click', async () => {
   } catch (e) { out.textContent = 'Hata: ' + e.message; }
 });
 
-$('#autoToggle').addEventListener('click', () => { $('#autoToggle').classList.toggle('on'); });
+$('#autoToggle').addEventListener('click', async () => {
+  if (!state.selectedChat) return;
+  const enabled = !$('#autoToggle').classList.contains('on');
+  $('#autoToggle').classList.toggle('on', enabled);
+  try {
+    await api('/api/rules/' + encodeURIComponent(state.selectedChat), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled, instruction: $('#autoInstruction').value }),
+    });
+    toast(enabled
+      ? 'OTOMATİK CEVAPLAMA AÇILDI — AI bu sohbete direkt yanıt verecek'
+      : 'Otomatik cevaplama KAPATILDI');
+    loadChats(); loadStats();
+  } catch (e) {
+    $('#autoToggle').classList.toggle('on', !enabled); // geri al
+    toast('Hata: ' + e.message);
+  }
+});
 $('#blockToggle').addEventListener('click', async () => {
   if (!state.selectedChat) return;
   const willBlock = !$('#blockToggle').classList.contains('on');
@@ -541,7 +559,9 @@ $('#saveAutoBtn').addEventListener('click', async () => {
   const instruction = $('#autoInstruction').value;
   try {
     await api('/api/rules/' + encodeURIComponent(state.selectedChat), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ enabled, instruction }) });
-    toast('AI kişiliği kaydedildi' + (enabled ? ' — otomatik cevaplama AÇIK' : ''));
+    toast(enabled
+      ? 'AI kişiliği kaydedildi — otomatik cevaplama AÇIK kalıyor (direkt gönderir)'
+      : 'AI kişiliği kaydedildi');
     loadChats(); loadStats();
   } catch (e) { toast('Hata: ' + e.message); }
 });

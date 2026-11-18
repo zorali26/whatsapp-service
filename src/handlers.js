@@ -55,7 +55,8 @@ async function analyzeAndMaybeRespond({ chatId, chatName, triggerWaId, silent, h
       log('info', `Otomatik cevap gonderildi -> ${chatName}`);
       notifyAll(chatName, `Asistan otomatik cevapladi: ${analysis.suggested_reply.slice(0, 80)}`, '/').catch(() => {});
     } catch (e) {
-      log('error', 'Otomatik cevap gonderilemedi: ' + e.message);
+      console.error('AUTO SEND HATASI DETAY:', e);
+      log('error', 'Otomatik cevap gonderilemedi: ' + ((e && (e.message || e.stack)) || String(e)));
       queries.createSuggestion(base); // gonderilemediyse onaya dusur
       notifyAll(chatName, 'Otomatik cevap gonderilemedi — onayinizi bekliyor', '/').catch(() => {});
     }
