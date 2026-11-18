@@ -1,0 +1,163 @@
+const fs = require('fs');
+const path = require('path');
+const Database = require('better-sqlite3');
+const config = require('./config');
+
+let db = null;
+
+function init() {
+  fs.mkdirSync(config.dataDir, { recursive: true });
+  db = new Database(path.join(config.dataDir, 'asistan.db'));
+  db.pragma('journal_mode = WAL');
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS chats (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      is_group INTEGER DEFAULT 0,
+      summary TEXT,
+      topic_direction TEXT,
+      summary_updated_at INTEGER,
+      updated_at INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      wa_id TEXT PRIMARY KEY,
+      chat_id TEXT NOT NULL,
+      sender TEXT,
+      sender_name TEXT,
+      body TEXT,
+      from_me INTEGER DEFAULT 0,
+      type TEXT,
+      timestamp INTEGER,
+      has_media INTEGER DEFAULT 0,
+      FOREIGN KEY (chat_id) REFERENCES chats(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_messages_chat ON messages(chat_id, timestamp);
+
+    CREATE TABLE IF NOT EXISTS suggestions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      chat_id TEXT NOT NULL,
+      trigger_wa_id TEXT,
+      draft TEXT NOT NULL,
+      summary TEXT,
+      topic_direction TEXT,
+      status TEXT DEFAULT 'pending',
+      created_at INTEGER NOT NULL,
+      sent_at INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS rules (
+      chat_id TEXT PRIMARY KEY,
+      enabled INTEGER DEFAULT 0,
+      instruction TEXT DEFAULT ''
+    );
+
+    CREATE TABLE IF NOT EXISTS logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      level TEXT,
+      message TEXT,
+      created_at INTEGER NOT NULL
+    );
+  `);
+  return db;
+}
+
+function log(level, message) {
+  const entry = `[${level}] ${message}`;
+  if (level === 'error') console.error(entry); else console.log(entry);
+  try {
+    db.prepare('INSERT INTO logs (level, message, created_at) VALUES (?, ?, ?)').run(
+      level, String(message).slice(0, 2000), Date.now()
+    );
+  } catch (_) { /* db henuz hazir degilse sessiz gec */ }
+}
+
+const queries = {
+  upsertChat(chat) {
+    db.prepare(`
+      INSERT INTO chats (id, name, is_group, updated_at)
+      VALUES (@id, @name, @is_group, @updated_at)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        is_group = excluded.is_group,
+        updated_at = excluded.updated_at
+    `).run(chat);
+  },
+  saveMessage(msg) {
+    db.prepare(`
+      INSERT INTO messages (wa_id, chat_id, sender, sender_name, body, from_me, type, timestamp, has_media)
+      VALUES (@wa_id, @chat_id, @sender, @sender_name, @body, @from_me, @type, @timestamp, @has_media)
+      ON CONFLICT(wa_id) DO NOTHING
+    `).run(msg);
+  },
+  recentMessages(chatId, limit) {
+    return db.prepare(
+      'SELECT * FROM messages WHERE chat_id = ? ORDER BY timestamp DESC LIMIT ?'
+    ).all(chatId, limit).reverse();
+  },
+  listChats() {
+    return db.prepare(`
+      SELECT c.*,
+        (SELECT COUNT(*) FROM suggestions s WHERE s.chat_id = c.id AND s.status = 'pending') AS pending_suggestions,
+        (SELECT MAX(timestamp) FROM messages m WHERE m.chat_id = c.id) AS last_message_at,
+        COALESCE((SELECT enabled FROM rules r WHERE r.chat_id = c.id), 0) AS auto_enabled,
+        COALESCE((SELECT instruction FROM rules r WHERE r.chat_id = c.id), '') AS auto_instruction
+      FROM chats c
+      ORDER BY last_message_at DESC
+    `).all();
+  },
+  updateChatSummary(chatId, summary, topicDirection) {
+    db.prepare(`
+      UPDATE chats SET summary = ?, topic_direction = ?, summary_updated_at = ?, updated_at = ?
+      WHERE id = ?
+    `).run(summary, topicDirection, Date.now(), Date.now(), chatId);
+  },
+  createSuggestion(s) {
+    db.prepare(`
+      INSERT INTO suggestions (chat_id, trigger_wa_id, draft, summary, topic_direction, status, created_at, sent_at)
+      VALUES (@chat_id, @trigger_wa_id, @draft, @summary, @topic_direction, @status, @created_at, @sent_at)
+    `).run({
+      status: 'pending',
+      sent_at: null,
+      ...s,
+    });
+  },
+  listSuggestions(status) {
+    return db.prepare(`
+      SELECT s.*, c.name AS chat_name FROM suggestions s
+      JOIN chats c ON c.id = s.chat_id
+      WHERE s.status = ? ORDER BY s.created_at DESC
+    `).all(status);
+  },
+  getSuggestion(id) {
+    return db.prepare('SELECT s.*, c.name AS chat_name FROM suggestions s JOIN chats c ON c.id = s.chat_id WHERE s.id = ?').get(id);
+  },
+  setSuggestionStatus(id, status) {
+    db.prepare('UPDATE suggestions SET status = ?, sent_at = ? WHERE id = ?')
+      .run(status, status === 'sent' ? Date.now() : null, id);
+  },
+  getRule(chatId) {
+    return db.prepare('SELECT * FROM rules WHERE chat_id = ?').get(chatId);
+  },
+  setRule(chatId, enabled, instruction) {
+    db.prepare(`
+      INSERT INTO rules (chat_id, enabled, instruction) VALUES (?, ?, ?)
+      ON CONFLICT(chat_id) DO UPDATE SET enabled = excluded.enabled, instruction = excluded.instruction
+    `).run(chatId, enabled ? 1 : 0, instruction || '');
+  },
+  listRules() {
+    return db.prepare('SELECT r.*, c.name AS chat_name FROM rules r JOIN chats c ON c.id = r.chat_id WHERE r.enabled = 1').all();
+  },
+  recentLogs(limit) {
+    return db.prepare('SELECT * FROM logs ORDER BY id DESC LIMIT ?').all(limit);
+  },
+  getMessageByWaId(waId) {
+    return db.prepare('SELECT * FROM messages WHERE wa_id = ?').get(waId);
+  },
+  recentChatsWithMessages(limit) {
+    return db.prepare('SELECT * FROM chats ORDER BY updated_at DESC LIMIT ?').all(limit);
+  },
+};
+
+module.exports = { init, queries, log };

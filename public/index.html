@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WhatsApp Asistan</title>
+<style>
+  :root { --bg:#0b141a; --panel:#111b21; --panel2:#202c33; --green:#00a884; --text:#e9edef; --muted:#8696a0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:12px 18px; background:var(--panel); display:flex; align-items:center; gap:14px; border-bottom:1px solid #2a3942; position:sticky; top:0; z-index:5; }
+  header h1 { font-size:17px; }
+  #status { font-size:12px; padding:4px 10px; border-radius:12px; background:var(--panel2); color:var(--muted); }
+  #status.ready { background:#075e3f; color:#b7f5d8; }
+  #status.qr, #status.starting, #status.authenticated { background:#5c4a00; color:#ffd966; }
+  nav { display:flex; gap:8px; padding:10px 18px; background:var(--panel); border-bottom:1px solid #2a3942; }
+  nav button { background:var(--panel2); color:var(--text); border:0; padding:8px 14px; border-radius:8px; cursor:pointer; }
+  nav button.active { background:var(--green); color:#04150d; font-weight:700; }
+  main { padding:16px; max-width:1100px; margin:0 auto; }
+  .card { background:var(--panel); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .row { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+  .muted { color:var(--muted); font-size:12px; }
+  .badge { background:var(--green); color:#04150d; font-size:11px; border-radius:10px; padding:2px 8px; margin-left:6px; }
+  button.btn { background:var(--green); color:#04150d; border:0; border-radius:8px; padding:8px 12px; cursor:pointer; font-weight:700; }
+  button.ghost { background:var(--panel2); color:var(--text); border:0; border-radius:8px; padding:8px 12px; cursor:pointer; }
+  button.danger { background:#5c1f1f; color:#ffb3b3; border:0; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:12px; }
+  textarea, input[type=text], select { width:100%; background:var(--panel2); color:var(--text); border:0; border-radius:8px; padding:9px 11px; margin:6px 0; font-size:14px; }
+  textarea { min-height:64px; resize:vertical; }
+  label { font-size:12px; color:var(--muted); }
+  .toggle { cursor:pointer; color:var(--muted); font-size:12px; user-select:none; }
+  .toggle.on { color:var(--green); font-weight:700; }
+  .msg { background:var(--panel2); border-radius:10px; padding:8px 10px; margin:6px 0; font-size:13px; white-space:pre-wrap; }
+  .msg.me { background:#005c4b; }
+  .msg .meta { font-size:10px; color:var(--muted); margin-bottom:2px; }
+  pre { background:#000; padding:10px; border-radius:8px; overflow:auto; font-size:11px; max-height:280px; }
+  #toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--green); color:#04150d; padding:10px 18px; border-radius:8px; display:none; font-weight:700; z-index:9; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:22px">🤖</span>
+  <h1>WhatsApp Asistan <span style="color:var(--muted);font-weight:400">— 7/24 akilli sohbet yoneticisi</span></h1>
+  <span id="status">yukleniyor…</span>
+  <a href="/qr" target="_blank" style="color:var(--green);font-size:13px;">QR Kod</a>
+</header>
+<nav>
+  <button data-tab="chats" class="active">Sohbetlerim</button>
+  <button data-tab="suggestions">Onay Bekleyenler <span id="sugCount"></span></button>
+  <button data-tab="ask">Sohbete Sor</button>
+  <button data-tab="logs">Kayitlar</button>
+</nav>
+<main>
+
+  <section id="tab-chats">
+    <div class="card">
+      <div class="row"><div><b>Nasil calisir?</b><div class="muted">Gelen her mesajda asistaniniz sohbeti okur, ozetler ve size bir cevap taslagi hazirlar. "Otomatik" sectiginiz kisilere insan gibi gecikmeyle kendisi yanit verir; digerleri onayinizi bekler.</div></div><button class="ghost" onclick="loadChats()">Yenile</button></div>
+    </div>
+    <div id="chatList"></div>
+  </section>
+
+  <section id="tab-suggestions" class="hidden">
+    <div class="card"><b>Onay Bekleyen Cevap Taslaklari</b><div class="muted">Dilediginiz gibi duzenleyip gonderin ya da yok sayin.</div></div>
+    <div id="suggestionList"></div>
+  </section>
+
+  <section id="tab-ask" class="hidden">
+    <div class="card">
+      <b>Sohbete Sor</b>
+      <div class="muted">Ornek: "Bu sohbette konu nereye gidiyor?", "Son mesajda ne istedi?", "Kiminle ne konusuluyor?"</div>
+      <label>Sohbet sec</label>
+      <select id="askChat"></select>
+      <label>Sorunuz</label>
+      <input type="text" id="askQuestion" placeholder="Sorunuzu yazin…" />
+      <button class="btn" onclick="askChat()">Sor</button>
+      <div id="askAnswer" class="msg hidden"></div>
+    </div>
+  </section>
+
+  <section id="tab-logs" class="hidden">
+    <div class="card"><div class="row"><b>Sistem Kayitlari</b><button class="ghost" onclick="loadLogs()">Yenile</button></div><pre id="logBox"></pre></div>
+  </section>
+
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(t) { const el = $('#toast'); el.textContent = t; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 2500); }
+
+$$('nav button').forEach(b => b.addEventListener('click', () => {
+  $$('nav button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  $$('main > section').forEach(s => s.classList.add('hidden'));
+  $('#tab-' + b.dataset.tab).classList.remove('hidden');
+  if (b.dataset.tab === 'suggestions') loadSuggestions();
+  if (b.dataset.tab === 'ask') fillAskSelect();
+  if (b.dataset.tab === 'logs') loadLogs();
+}));
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  if (!res.ok) { const t = await res.text(); throw new Error(t || res.status); }
+  return res.json();
+}
+
+async function refreshStatus() {
+  try {
+    const s = await fetch('/api/status').then(r => r.json());
+    const el = $('#status');
+    el.textContent = 'Durum: ' + s.status + (s.aiConfigured ? '' : ' (DeepSeek anahtari eksik!)');
+    el.className = s.status;
+  } catch (_) {}
+}
+setInterval(refreshStatus, 5000);
+
+async function loadChats() {
+  const chats = await api('/api/chats');
+  const el = $('#chatList');
+  if (!chats.length) { el.innerHTML = '<div class="card muted">Henuz sohbet yok. WhatsApp baglandiktan sonra mesajlar burada gorunecek.</div>'; return; }
+  el.innerHTML = chats.map(c => `
+    <div class="card">
+      <div class="row">
+        <div style="flex:1">
+          <b>${esc(c.name)}</b>${c.is_group ? '<span class="badge">GRUP</span>' : ''}${c.pending_suggestions ? `<span class="badge">${c.pending_suggestions} oneri</span>` : ''}
+          <div class="muted">Son mesaj: ${c.last_message_at ? new Date(c.last_message_at).toLocaleString('tr-TR') : '-'}</div>
+          ${c.summary ? `<div class="msg" style="margin-top:8px"><div class="meta">OZET (AI)</div>${esc(c.summary)}</div>` : ''}
+          ${c.topic_direction ? `<div class="msg"><div class="meta">KONUNUN GITTIGI YON (AI)</div>${esc(c.topic_direction)}</div>` : ''}
+        </div>
+        <div style="min-width:210px">
+          <label>Otomatik yanit</label>
+          <div class="toggle ${c.auto_enabled ? 'on' : ''}" onclick="toggleAuto('${esc(c.id)}', ${c.auto_enabled ? 0 : 1}, this)">${c.auto_enabled ? 'ACIK — kendisi yanitliyor' : 'KAPALI — onayinizi bekler'}</div>
+          <textarea id="ins-${esc(c.id)}" placeholder="Bu kisi icin talimat (orn: randevu alinca yarin diye yaz)…">${esc(c.auto_instruction || '')}</textarea>
+          <button class="ghost" style="font-size:11px;padding:4px 8px" onclick="saveInstruction('${esc(c.id)}')">Talimati kaydet</button>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <button class="ghost" onclick="analyze('${esc(c.id)}')">✦ Simdi ozetle</button>
+        <button class="ghost" onclick="toggleMessages('${esc(c.id)}')">Mesajlari goster/gizle</button>
+        <button class="ghost" onclick="promptSend('${esc(c.id)}')">Mesaj gonder</button>
+      </div>
+      <div id="msgs-${esc(c.id)}" class="hidden" style="margin-top:10px"></div>
+    </div>`).join('');
+}
+
+async function toggleAuto(id, enabled, el) {
+  const instruction = $('#ins-' + id)?.value || '';
+  await api('/api/rules/' + encodeURIComponent(id), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ enabled: !!enabled, instruction }) });
+  toast('Kural guncellendi');
+  loadChats();
+}
+async function saveInstruction(id) {
+  const instruction = $('#ins-' + id)?.value || '';
+  const isOn = $('#ins-' + id)?.closest('.card')?.querySelector('.toggle')?.classList.contains('on');
+  await api('/api/rules/' + encodeURIComponent(id), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ enabled: !!isOn, instruction }) });
+  toast('Talimat kaydedildi');
+}
+async function analyze(id) {
+  toast('AI analiz ediyor…');
+  try { await api('/api/chats/' + encodeURIComponent(id) + '/analyze', { method: 'POST' }); loadChats(); toast('Analiz tamam'); }
+  catch (e) { toast('Hata: ' + e.message); }
+}
+async function toggleMessages(id) {
+  const box = $('#msgs-' + id);
+  if (!box.classList.contains('hidden')) { box.classList.add('hidden'); return; }
+  const msgs = await api('/api/chats/' + encodeURIComponent(id) + '/messages?limit=40');
+  box.innerHTML = msgs.map(m => `
+    <div class="msg ${m.from_me ? 'me' : ''}">
+      <div class="meta">${m.from_me ? 'BEN' : esc(m.sender_name || m.sender || '')} · ${new Date(m.timestamp).toLocaleString('tr-TR')}
+        ${m.from_me ? `<button class="danger" style="margin-left:8px" onclick="delMsg('${esc(m.wa_id)}','everyone')">Herkesten sil</button>` : `<button class="danger" style="margin-left:8px" onclick="delMsg('${esc(m.wa_id)}','me')">Benden sil</button>`}
+      </div>${esc(m.body || '(medya)')}</div>`).join('');
+  box.classList.remove('hidden');
+}
+async function delMsg(waId, target) {
+  if (!confirm(target === 'everyone' ? 'Bu mesajiniz herkesten silinsin mi?' : 'Bu mesaj sadece sizin ekraninizdan silinsin mi?')) return;
+  try { const r = await api('/api/messages/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ waId, target }) }); toast(r.deleted === 'everyone' ? 'Herkesten silindi' : 'Sizden silindi'); }
+  catch (e) { toast('Hata: ' + e.message); }
+}
+async function promptSend(id) {
+  const body = prompt('Gonderilecek mesaj:');
+  if (!body) return;
+  try { await api('/api/send', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ chatId: id, body }) }); toast('Gonderildi'); }
+  catch (e) { toast('Hata: ' + e.message); }
+}
+
+async function loadSuggestions() {
+  const items = await api('/api/suggestions?status=pending');
+  $('#sugCount').textContent = items.length ? '(' + items.length + ')' : '';
+  const el = $('#suggestionList');
+  if (!items.length) { el.innerHTML = '<div class="card muted">Onay bekleyen taslak yok.</div>'; return; }
+  el.innerHTML = items.map(s => `
+    <div class="card">
+      <b>${esc(s.chat_name)}</b> <span class="muted">${new Date(s.created_at).toLocaleString('tr-TR')}</span>
+      ${s.summary ? `<div class="msg"><div class="meta">OZET (AI)</div>${esc(s.summary)}</div>` : ''}
+      ${s.topic_direction ? `<div class="msg"><div class="meta">KONUNUN GITTIGI YON (AI)</div>${esc(s.topic_direction)}</div>` : ''}
+      <label>Taslak cevap (duzenleyebilirsiniz)</label>
+      <textarea id="sg-${s.id}">${esc(s.draft)}</textarea>
+      <button class="btn" onclick="sendSuggestion(${s.id})">Gonder</button>
+      <button class="ghost" onclick="discardSuggestion(${s.id})">Yok say</button>
+    </div>`).join('');
+}
+async function sendSuggestion(id) {
+  const body = $('#sg-' + id).value.trim();
+  try { await api('/api/suggestions/' + id + '/send', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ body }) }); toast('Gonderildi'); loadSuggestions(); }
+  catch (e) { toast('Hata: ' + e.message); }
+}
+async function discardSuggestion(id) {
+  await api('/api/suggestions/' + id + '/discard', { method: 'POST' });
+  loadSuggestions();
+}
+
+async function fillAskSelect() {
+  const chats = await api('/api/chats');
+  $('#askChat').innerHTML = chats.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+}
+async function askChat() {
+  const id = $('#askChat').value, q = $('#askQuestion').value.trim();
+  if (!q) return;
+  const box = $('#askAnswer');
+  box.textContent = 'AI dusunuyor…'; box.classList.remove('hidden');
+  try {
+    const r = await api('/api/chats/' + encodeURIComponent(id) + '/ask', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ question: q }) });
+    box.textContent = r.answer;
+  } catch (e) { box.textContent = 'Hata: ' + e.message; }
+}
+
+async function loadLogs() {
+  const logs = await api('/api/logs?limit=120');
+  $('#logBox').textContent = logs.map(l => '[' + new Date(l.created_at).toLocaleString('tr-TR') + '] [' + l.level + '] ' + l.message).join('\n');
+}
+
+refreshStatus();
+loadChats();
+</script>
+</body>
+</html>
