@@ -45,8 +45,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .sidebtn.on{border-color:var(--green);background:#0c2b1f}
 
 /* ---------- Main ---------- */
-#main{overflow:hidden;display:flex;flex-direction:column;height:100vh}
-.view{display:none;height:100%;overflow-y:auto;padding:22px 26px}
+#main{overflow:hidden;display:flex;flex-direction:column;height:100vh;min-width:0}
+.view{display:none;height:100%;overflow-y:auto;padding:22px 26px;min-height:0}
 .view.active{display:block}
 .viewhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .viewhead h2{font-size:19px;letter-spacing:-.3px}
@@ -85,11 +85,11 @@ input:focus,textarea:focus{border-color:var(--green)}
 label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;display:block;margin:10px 0 6px}
 
 /* ---------- Chats view ---------- */
-#view-chats{display:none;height:100%}
+#view-chats{display:none;height:100%;min-height:0}
 #view-chats.active{display:grid;grid-template-columns:340px 1fr;padding:0;overflow:hidden}
-#chatListPane{border-right:1px solid var(--border-soft);display:flex;flex-direction:column;background:#0e1626}
+#chatListPane{border-right:1px solid var(--border-soft);display:flex;flex-direction:column;background:#0e1626;min-height:0;min-width:0}
 #chatListHead{padding:16px 16px 10px;border-bottom:1px solid var(--border-soft)}
-#chatList{flex:1;overflow-y:auto}
+#chatList{flex:1;overflow-y:auto;min-height:0}
 .chatitem{display:flex;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .15s}
 .chatitem:hover{background:var(--panel2)}
 .chatitem.sel{background:var(--panel3);border-left:3px solid var(--green)}
@@ -100,12 +100,12 @@ label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacin
 .pendchip{font-size:8.5px;background:var(--amber);color:#241a02;border-radius:4px;padding:1px 5px;font-weight:800}
 .chatitem time{margin-left:auto;font-size:10px;color:var(--faint);white-space:nowrap}
 
-#chatDetail{display:grid;grid-template-columns:1fr 320px;height:100%;overflow:hidden}
-#chatMain{display:flex;flex-direction:column;height:100%}
-#chatHeader{padding:12px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;gap:12px;background:#0e1626}
+#chatDetail{display:grid;grid-template-columns:minmax(0,1fr) 320px;height:100%;overflow:hidden;min-height:0;min-width:0}
+#chatMain{display:flex;flex-direction:column;height:100%;min-width:0;min-height:0}
+#chatHeader{padding:12px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;gap:12px;background:#0e1626;flex-wrap:wrap}
 #chatHeader .hname{font-weight:800;font-size:14px}
 #chatHeader .hsub{font-size:10.5px;color:var(--muted)}
-#msgBox{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:8px;background:radial-gradient(ellipse at top,#0d1730 0%,var(--bg) 60%)}
+#msgBox{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:8px;background:radial-gradient(ellipse at top,#0d1730 0%,var(--bg) 60%);min-height:0}
 .bub{max-width:64%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.45;position:relative;white-space:pre-wrap;word-break:break-word}
 .bub.in{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-soft);border-bottom-left-radius:3px}
 .bub.out{align-self:flex-end;background:#0c3b2e;border:1px solid #14532d;border-bottom-right-radius:3px}
@@ -113,7 +113,7 @@ label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacin
 #composer{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--border-soft);background:#0e1626}
 #composer input{flex:1}
 
-#aiRail{border-left:1px solid var(--border-soft);background:var(--panel);overflow-y:auto;padding:16px}
+#aiRail{border-left:1px solid var(--border-soft);background:var(--panel);overflow-y:auto;padding:16px;min-height:0}
 #aiRail .card{background:var(--panel2);border:1px solid var(--border-soft);margin-bottom:12px}
 .aifield{font-size:12px;color:#c4d0e2;line-height:1.5}
 .switch{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -146,7 +146,36 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
 
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-thumb{background:var(--panel3);border-radius:6px}
-@media(max-width:1100px){#app{grid-template-columns:220px 1fr}.stats{grid-template-columns:repeat(2,1fr)}#chatDetail{grid-template-columns:1fr}#aiRail{display:none}}
+@media (max-width:1200px){#app{grid-template-columns:220px 1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:900px){
+  body{overflow:hidden}
+  #app{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:100vh}
+  #sidebar{flex-direction:row;flex-wrap:wrap;align-items:center;padding:8px 12px;gap:8px;border-right:0;border-bottom:1px solid var(--border-soft)}
+  .brand{border:0;padding:4px 6px 4px 0;margin:0;gap:8px}
+  .brand img{width:32px;height:32px}
+  .brand h1{font-size:12px}
+  .brand small{display:none}
+  .nav{flex-direction:row;flex:1 1 auto;overflow-x:auto;gap:4px;padding:2px}
+  .navbtn{white-space:nowrap;padding:8px 10px;font-size:11px}
+  .navbtn .ic{display:none}
+  .sidefoot{flex-direction:row;border:0;padding:2px 0 0;gap:6px;flex:0 0 auto}
+  .statuspill,.sidefoot a{display:none}
+  .sidebtn{padding:8px 10px;font-size:11px}
+  .stats{grid-template-columns:repeat(2,1fr);gap:10px}
+  .grid2{grid-template-columns:1fr}
+  .view{padding:14px}
+  #view-chats.active{grid-template-columns:1fr}
+  #chatListPane{border-right:0}
+  #chatDetail{display:none}
+  #view-chats.show-detail #chatListPane{display:none}
+  #view-chats.show-detail #chatDetail{display:flex;flex-direction:column;overflow-y:auto}
+  #chatMain{flex:0 0 auto;height:72vh;min-height:420px}
+  #aiRail{display:block;overflow:visible;border-left:0;border-top:1px solid var(--border-soft)}
+  #backToChats{display:inline-flex !important}
+  .bub{max-width:86%}
+  #composerInput{font-size:16px}
+  .suggrid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -215,6 +244,7 @@ pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12
       <div id="chatDetail">
         <div id="chatMain">
           <div id="chatHeader">
+            <button class="ghost" id="backToChats" style="display:none">← Sohbetler</button>
             <div class="avatar" id="selAvatar">—</div>
             <div><div class="hname" id="selName">Bir sohbet seçin</div><div class="hsub" id="selSub">Soldan bir konuşma seçin</div></div>
           </div>
@@ -332,7 +362,7 @@ $$('.navbtn').forEach(btn => btn.addEventListener('click', () => {
   $('#view-' + view).classList.add('active');
   state.view = view;
   if (view === 'dashboard') loadDashboard();
-  if (view === 'chats') loadChats();
+  if (view === 'chats') { if (window.innerWidth <= 900) $('#view-chats').classList.remove('show-detail'); loadChats(); }
   if (view === 'suggestions') loadSuggestions();
   if (view === 'logs') loadLogs();
 }));
@@ -403,8 +433,11 @@ function renderChatList() {
   $$('.chatitem', list).forEach(el => el.addEventListener('click', () => selectChat(el.dataset.id)));
 }
 
+$('#backToChats').addEventListener('click', () => { $('#view-chats').classList.remove('show-detail'); });
+
 async function selectChat(id) {
   state.selectedChat = id;
+  if (window.innerWidth <= 900) $('#view-chats').classList.add('show-detail');
   const chat = state.chats.find(c => c.id === id);
   $('#selAvatar').textContent = initials(chat?.name);
   $('#selName').textContent = chat?.name || id;

@@ -55,6 +55,11 @@ function hasMedia(raw) {
   return ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage'].some((k) => m[k]);
 }
 
+function formatPhone(jid) {
+  const digits = (jid.split('@')[0] || '').replace(/\D/g, '');
+  return digits ? '+' + digits : jid;
+}
+
 async function resolveChatName(chatId, pushName) {
   if (chatId.endsWith('@g.us')) {
     if (groupNameCache.has(chatId)) return groupNameCache.get(chatId);
@@ -64,11 +69,18 @@ async function resolveChatName(chatId, pushName) {
       groupNameCache.set(chatId, name);
       return name;
     } catch (_) {
-      return chatId;
+      return 'Grup ' + chatId.split('@')[0].slice(0, 10);
     }
   }
   if (pushName) return pushName;
-  return chatId.split('@')[0];
+  const c = queries.getContactByJid(chatId) || queries.getContactByLid(chatId);
+  if (c) {
+    if (c.name) return c.name;
+    const phoneSrc = c.phone || (c.jid.endsWith('@s.whatsapp.net') ? c.jid : null);
+    if (phoneSrc) return formatPhone(phoneSrc);
+  }
+  if (chatId.endsWith('@s.whatsapp.net')) return formatPhone(chatId);
+  return 'Kişi ' + chatId.split('@')[0].slice(0, 8);
 }
 
 async function handleMessage(raw, { silent = false } = {}) {
@@ -194,13 +206,38 @@ async function start() {
   });
 
   // Baglanti acildiginda gecmis mesajlar gelirse sessizce kaydet (AI cagrisi yapma)
-  sock.ev.on('messaging-history.set', async ({ messages } = {}) => {
+  sock.ev.on('messaging-history.set', async ({ chats, contacts, messages } = {}) => {
     try {
+      // 1) KISILER — LID <-> isim / numara eslemesi (WhatsApp'in dahili numaralari icin)
+      for (const c of contacts || []) {
+        if (!c?.id) continue;
+        const name = c.name || c.notify || c.verifiedName || '';
+        const id = c.id;
+        const lid = c.lid || (id.endsWith('@lid') ? id : '');
+        const phone = id.endsWith('@s.whatsapp.net') ? id : (c.phone || '');
+        queries.saveContact({ jid: id, name, lid, phone });
+      }
+      // 2) SOHBETLER — isimli olanlari isimle kaydet
+      for (const ch of chats || []) {
+        if (!ch?.id) continue;
+        let name = ch.name || ch.subject || ch.formattedTitle || null;
+        if (!name) {
+          if (ch.id.endsWith('@g.us')) name = 'Grup ' + ch.id.split('@')[0].slice(0, 10);
+          else {
+            const c = queries.getContactByJid(ch.id) || queries.getContactByLid(ch.id);
+            name = c?.name || (ch.id.endsWith('@s.whatsapp.net') ? formatPhone(ch.id) : 'Kişi ' + ch.id.split('@')[0].slice(0, 8));
+          }
+        }
+        queries.upsertChat({ id: ch.id, name, is_group: ch.id.endsWith('@g.us') ? 1 : 0, updated_at: Date.now() });
+      }
+      // 3) Eski mesajlar — sessizce kaydet, isme cozulmemis "9053..." gorunumlerini duzelt
+      queries.repairChatNames();
       const list = Array.isArray(messages) ? messages : [];
-      log('info', `Gecmis mesajlar alindi: ${list.length} adet (AI cagrisi yapilmadan kaydedildi).`);
-      for (const m of list.slice(-500)) {
+      log('info', `Gecmis senkronu: ${(contacts || []).length} kisi, ${(chats || []).length} sohbet, ${list.length} mesaj (AI cagrisi yok).`);
+      for (const m of list.slice(-800)) {
         await handleMessage(m, { silent: true }).catch(() => {});
       }
+      queries.repairChatNames(); // mesaj pushName'leri cozumlenmis olabilir
     } catch (e) {
       log('error', 'Gecmis mesaj kaydi basarisiz: ' + e.message);
     }

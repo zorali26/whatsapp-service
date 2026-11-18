@@ -71,6 +71,13 @@ function init() {
       reason TEXT DEFAULT '',
       created_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS contacts (
+      jid TEXT PRIMARY KEY,
+      name TEXT DEFAULT '',
+      lid TEXT DEFAULT '',
+      phone TEXT DEFAULT ''
+    );
   `);
   return db;
 }
@@ -155,6 +162,37 @@ const queries = {
   },
   getBlock(chatId) {
     return db.prepare('SELECT * FROM blocks WHERE chat_id = ?').get(chatId);
+  },
+  saveContact({ jid, name, lid, phone }) {
+    db.prepare(`
+      INSERT INTO contacts (jid, name, lid, phone) VALUES (@jid, @name, @lid, @phone)
+      ON CONFLICT(jid) DO UPDATE SET
+        name = CASE WHEN excluded.name != '' THEN excluded.name ELSE contacts.name END,
+        lid = CASE WHEN excluded.lid != '' THEN excluded.lid ELSE contacts.lid END,
+        phone = CASE WHEN excluded.phone != '' THEN excluded.phone ELSE contacts.phone END
+    `).run({ jid, name: name || '', lid: lid || '', phone: phone || '' });
+  },
+  getContactByJid(jid) {
+    return db.prepare('SELECT * FROM contacts WHERE jid = ?').get(jid);
+  },
+  getContactByLid(lid) {
+    return db.prepare('SELECT * FROM contacts WHERE lid = ?').get(lid);
+  },
+  repairChatNames() {
+    // Cozulmus kisilerden isim geldi; hala "9053..." veya "Kisi ..." gorunen sohbetleri duzelt
+    return db.prepare(`
+      UPDATE chats
+      SET name = (
+        SELECT c.name FROM contacts c
+        WHERE (c.jid = chats.id OR c.lid = chats.id) AND c.name != ''
+        LIMIT 1
+      )
+      WHERE (name GLOB '[0-9]*' OR name LIKE 'Kişi %')
+        AND EXISTS (
+          SELECT 1 FROM contacts c
+          WHERE (c.jid = chats.id OR c.lid = chats.id) AND c.name != ''
+        )
+    `).run();
   },
   setBlock(chatId, reason) {
     db.prepare(`
