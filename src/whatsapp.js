@@ -34,6 +34,10 @@ function createClient() {
     },
   });
 
+  client.on('loading_screen', (percent, message) => {
+    log('info', `WhatsApp Web yukleniyor: %${percent} ${message || ''}`);
+  });
+
   client.on('qr', (qr) => {
     state.status = 'qr';
     qrcodeTerminal.generate(qr, { small: true });
