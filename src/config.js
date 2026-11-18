@@ -27,6 +27,12 @@ const config = {
   fetchHistoryOnStart: process.env.FETCH_HISTORY_ON_START !== 'false',
   historyLimitPerChat: parseInt(process.env.HISTORY_LIMIT_PER_CHAT || '20', 10),
 
+  vapid: {
+    publicKey: process.env.VAPID_PUBLIC_KEY || '',
+    privateKey: process.env.VAPID_PRIVATE_KEY || '',
+    subject: process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
+  },
+
   // Puppeteer yok; tarayicisiz (Baileys). Bu alan bilerek kaldirildi.
 };
 

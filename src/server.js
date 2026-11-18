@@ -4,6 +4,7 @@ const config = require('./config');
 const { queries, log } = require('./db');
 const { getStatus, humanSendMessage, deleteMessage } = require('./whatsapp');
 const { askAboutChat, analyzeConversation } = require('./ai');
+const { vapidPublicKey } = require('./push');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -35,7 +36,40 @@ app.get('/api/status', (req, res) => {
   res.json(getStatus());
 });
 
-// Panelde gosterilecek guncel QR (telefonla taramak icin)
+// Dashboard istatistikleri
+app.get('/api/stats', (req, res) => {
+  res.json(queries.stats());
+});
+
+// Canli akisi besle: son mesaj + bekleyen taslak sayisi
+app.get('/api/poll', (req, res) => {
+  const since = parseInt(req.query.since || '0', 10);
+  res.json({
+    messages: queries.latestMessagesSince(since),
+    pendingSuggestions: queries.listSuggestions('pending').length,
+  });
+});
+
+// Dashboard icin son aktiviteler
+app.get('/api/activity', (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit || '15', 10), 50);
+  res.json(queries.activityFeed(limit));
+});
+
+// Web Push abonelikleri
+app.get('/api/push/vapid-public-key', (req, res) => {
+  res.json({ key: vapidPublicKey() });
+});
+
+app.post('/api/push/subscribe', (req, res) => {
+  const sub = req.body;
+  if (!sub?.endpoint) return res.status(400).json({ error: 'Gecersiz abonelik' });
+  queries.savePushSubscription(JSON.stringify(sub));
+  log('info', 'Yeni push aboneligi kaydedildi');
+  res.json({ ok: true });
+});
+
+// Paneldeki guncel QR (telefonla taramak icin)
 app.get('/qr', (req, res) => {
   const { qrDataUrl, status } = getStatus();
   if (qrDataUrl) {

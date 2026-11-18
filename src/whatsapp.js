@@ -8,6 +8,7 @@ const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = r
 const config = require('./config');
 const { queries, log } = require('./db');
 const { analyzeAndMaybeRespond } = require('./handlers');
+const { notifyAll } = require('./push');
 
 const AUTH_DIR = path.join(config.dataDir, 'baileys_auth');
 
@@ -101,6 +102,14 @@ async function handleMessage(raw, { silent = false } = {}) {
     has_media: hasMedia(raw) ? 1 : 0,
   });
 
+  // Canli bildirim — gecmis senkronundaki eski mesajlar icin push yollama
+  const age = Date.now() - timestamp;
+  if (!silent && body && age < 120000) {
+    const preview = body.length > 90 ? body.slice(0, 90) + '…' : body;
+    const title = fromMe ? `${config.ownerName} (sen)` : name;
+    notifyAll(title, preview, '/').catch(() => {});
+  }
+
   if (fromMe || silent) return;
 
   await analyzeAndMaybeRespond({
@@ -129,7 +138,7 @@ async function start() {
     version,
     auth: authState,
     browser: ['WhatsApp Asistan', 'Chrome', '120.0.0'],
-    syncFullHistory: false,
+    syncFullHistory: true, // tum gecmisi senkronla (ilk baglanti uzun surebilir)
   });
 
   sock.ev.on('creds.update', saveCreds);

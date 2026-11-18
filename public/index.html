@@ -3,102 +3,295 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>WhatsApp Asistan</title>
+<meta name="theme-color" content="#0f172a" />
+<title>WhatsApp Asistan — AI Yayın Merkezi</title>
+<link rel="icon" href="/logo-icon.svg" type="image/svg+xml" />
+<link rel="manifest" href="/manifest.webmanifest" />
 <style>
-  :root { --bg:#0b141a; --panel:#111b21; --panel2:#202c33; --green:#00a884; --text:#e9edef; --muted:#8696a0; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:system-ui, sans-serif; background:var(--bg); color:var(--text); }
-  header { padding:12px 18px; background:var(--panel); display:flex; align-items:center; gap:14px; border-bottom:1px solid #2a3942; position:sticky; top:0; z-index:5; }
-  header h1 { font-size:17px; }
-  #status { font-size:12px; padding:4px 10px; border-radius:12px; background:var(--panel2); color:var(--muted); }
-  #status.ready { background:#075e3f; color:#b7f5d8; }
-  #status.qr, #status.starting, #status.authenticated { background:#5c4a00; color:#ffd966; }
-  nav { display:flex; gap:8px; padding:10px 18px; background:var(--panel); border-bottom:1px solid #2a3942; }
-  nav button { background:var(--panel2); color:var(--text); border:0; padding:8px 14px; border-radius:8px; cursor:pointer; }
-  nav button.active { background:var(--green); color:#04150d; font-weight:700; }
-  main { padding:16px; max-width:1100px; margin:0 auto; }
-  .card { background:var(--panel); border-radius:12px; padding:14px; margin-bottom:12px; }
-  .row { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
-  .muted { color:var(--muted); font-size:12px; }
-  .badge { background:var(--green); color:#04150d; font-size:11px; border-radius:10px; padding:2px 8px; margin-left:6px; }
-  button.btn { background:var(--green); color:#04150d; border:0; border-radius:8px; padding:8px 12px; cursor:pointer; font-weight:700; }
-  button.ghost { background:var(--panel2); color:var(--text); border:0; border-radius:8px; padding:8px 12px; cursor:pointer; }
-  button.danger { background:#5c1f1f; color:#ffb3b3; border:0; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:12px; }
-  textarea, input[type=text], select { width:100%; background:var(--panel2); color:var(--text); border:0; border-radius:8px; padding:9px 11px; margin:6px 0; font-size:14px; }
-  textarea { min-height:64px; resize:vertical; }
-  label { font-size:12px; color:var(--muted); }
-  .toggle { cursor:pointer; color:var(--muted); font-size:12px; user-select:none; }
-  .toggle.on { color:var(--green); font-weight:700; }
-  .msg { background:var(--panel2); border-radius:10px; padding:8px 10px; margin:6px 0; font-size:13px; white-space:pre-wrap; }
-  .msg.me { background:#005c4b; }
-  .msg .meta { font-size:10px; color:var(--muted); margin-bottom:2px; }
-  pre { background:#000; padding:10px; border-radius:8px; overflow:auto; font-size:11px; max-height:280px; }
-  #toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--green); color:#04150d; padding:10px 18px; border-radius:8px; display:none; font-weight:700; z-index:9; }
-  .hidden { display:none; }
+:root{
+  --bg:#0b1220; --panel:#111a2e; --panel2:#182238; --panel3:#1f2b47;
+  --border:#223050; --border-soft:#1a2540;
+  --text:#e6edf7; --muted:#8598b8; --faint:#5c6d8f;
+  --green:#10b981; --green2:#059669; --red:#f87171; --amber:#fbbf24;
+  --grad:linear-gradient(135deg,#10b981 0%,#059669 100%);
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+#app{display:grid;grid-template-columns:264px 1fr;height:100vh}
+
+/* ---------- Sidebar ---------- */
+#sidebar{background:linear-gradient(180deg,#0d1526 0%,#0b1220 100%);border-right:1px solid var(--border-soft);display:flex;flex-direction:column;padding:18px 14px;gap:6px}
+.brand{display:flex;align-items:center;gap:12px;padding:6px 8px 16px;border-bottom:1px solid var(--border-soft);margin-bottom:10px}
+.brand img{width:46px;height:46px;border-radius:12px;box-shadow:0 0 24px rgba(16,185,129,.35)}
+.brand h1{font-size:15px;line-height:1.2}
+.brand small{display:block;font-size:9.5px;letter-spacing:1.6px;color:var(--green);font-weight:700;margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:4px;flex:1}
+.navbtn{display:flex;align-items:center;gap:12px;padding:11px 12px;border:0;background:transparent;color:var(--muted);border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:500;text-align:left;transition:all .18s;position:relative}
+.navbtn:hover{background:var(--panel2);color:var(--text)}
+.navbtn.active{background:var(--grad);color:#04150d;font-weight:700;box-shadow:0 4px 18px rgba(16,185,129,.3)}
+.navbtn .ic{width:20px;text-align:center;font-size:15px}
+.badge{margin-left:auto;background:var(--amber);color:#241a02;font-size:10.5px;font-weight:800;border-radius:10px;padding:2px 8px}
+.navbtn.active .badge{background:#04150d;color:var(--green)}
+
+.sidefoot{border-top:1px solid var(--border-soft);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.statuspill{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--panel);border:1px solid var(--border-soft);border-radius:10px;font-size:11.5px;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.dot.ready{background:var(--green);box-shadow:0 0 10px var(--green)}
+.dot.bad{background:var(--red);box-shadow:0 0 8px var(--red)}
+.sidebtn{display:flex;align-items:center;gap:10px;padding:10px 11px;background:var(--panel);border:1px solid var(--border-soft);color:var(--text);border-radius:10px;cursor:pointer;font-size:12px;transition:all .18s}
+.sidebtn:hover{border-color:var(--green);box-shadow:0 0 14px rgba(16,185,129,.18)}
+.sidebtn.on{border-color:var(--green);background:#0c2b1f}
+
+/* ---------- Main ---------- */
+#main{overflow:hidden;display:flex;flex-direction:column;height:100vh}
+.view{display:none;height:100%;overflow-y:auto;padding:22px 26px}
+.view.active{display:block}
+.viewhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.viewhead h2{font-size:19px;letter-spacing:-.3px}
+.viewhead p{color:var(--muted);font-size:12px;margin-top:3px}
+
+/* Cards / stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}
+.stat::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--grad);opacity:.7}
+.stat .lbl{font-size:10px;letter-spacing:1.4px;color:var(--muted);text-transform:uppercase;font-weight:700}
+.stat .val{font-size:30px;font-weight:800;margin-top:6px;letter-spacing:-1px}
+.stat .sub{font-size:11px;color:var(--faint);margin-top:2px}
+.card{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--radius);padding:16px}
+.card h3{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+.grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}
+.feed{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto}
+.feeditem{display:flex;gap:10px;align-items:flex-start;background:var(--panel2);border:1px solid var(--border-soft);border-radius:10px;padding:9px 11px}
+.feeditem .fi-in{color:var(--green)} .feeditem .fi-out{color:var(--amber)}
+.feeditem b{font-size:12px}
+.feeditem span{display:block;font-size:12px;color:#c4d0e2;margin-top:1px}
+.feeditem time{font-size:10px;color:var(--faint);margin-left:auto;white-space:nowrap}
+.empty{color:var(--faint);font-size:12.5px;padding:26px;text-align:center}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#04150d;border:0;border-radius:10px;padding:9px 15px;cursor:pointer;font-weight:800;font-size:12.5px;transition:transform .15s}
+.btn:hover{transform:translateY(-1px)}
+.ghost{display:inline-flex;align-items:center;gap:8px;background:var(--panel2);color:var(--text);border:1px solid var(--border-soft);border-radius:10px;padding:8px 13px;cursor:pointer;font-size:12px;transition:border-color .15s}
+.ghost:hover{border-color:var(--green)}
+.danger{background:#3a1414;color:#fca5a5;border:1px solid #5b2222;border-radius:8px;padding:5px 9px;cursor:pointer;font-size:10.5px}
+.danger:hover{background:#4a1818}
+
+input[type=text],textarea,select{background:var(--panel2);color:var(--text);border:1px solid var(--border-soft);border-radius:10px;padding:10px 12px;font-size:13px;width:100%;outline:none;font-family:inherit}
+textarea{resize:vertical;min-height:60px}
+input:focus,textarea:focus{border-color:var(--green)}
+label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;display:block;margin:10px 0 6px}
+
+/* ---------- Chats view ---------- */
+#view-chats{display:none;height:100%}
+#view-chats.active{display:grid;grid-template-columns:340px 1fr;padding:0;overflow:hidden}
+#chatListPane{border-right:1px solid var(--border-soft);display:flex;flex-direction:column;background:#0e1626}
+#chatListHead{padding:16px 16px 10px;border-bottom:1px solid var(--border-soft)}
+#chatList{flex:1;overflow-y:auto}
+.chatitem{display:flex;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .15s}
+.chatitem:hover{background:var(--panel2)}
+.chatitem.sel{background:var(--panel3);border-left:3px solid var(--green)}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--panel3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:var(--green);flex-shrink:0}
+.chatitem .cname{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.chatitem .cprev{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.autochip{font-size:8.5px;background:var(--green);color:#04150d;border-radius:4px;padding:1px 5px;font-weight:800;letter-spacing:.5px}
+.pendchip{font-size:8.5px;background:var(--amber);color:#241a02;border-radius:4px;padding:1px 5px;font-weight:800}
+.chatitem time{margin-left:auto;font-size:10px;color:var(--faint);white-space:nowrap}
+
+#chatDetail{display:grid;grid-template-columns:1fr 320px;height:100%;overflow:hidden}
+#chatMain{display:flex;flex-direction:column;height:100%}
+#chatHeader{padding:12px 18px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;gap:12px;background:#0e1626}
+#chatHeader .hname{font-weight:800;font-size:14px}
+#chatHeader .hsub{font-size:10.5px;color:var(--muted)}
+#msgBox{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:8px;background:radial-gradient(ellipse at top,#0d1730 0%,var(--bg) 60%)}
+.bub{max-width:64%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.45;position:relative;white-space:pre-wrap;word-break:break-word}
+.bub.in{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-soft);border-bottom-left-radius:3px}
+.bub.out{align-self:flex-end;background:#0c3b2e;border:1px solid #14532d;border-bottom-right-radius:3px}
+.bub .bmeta{font-size:9px;color:var(--faint);margin-bottom:3px;display:flex;gap:8px;align-items:center}
+#composer{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--border-soft);background:#0e1626}
+#composer input{flex:1}
+
+#aiRail{border-left:1px solid var(--border-soft);background:var(--panel);overflow-y:auto;padding:16px}
+#aiRail .card{background:var(--panel2);border:1px solid var(--border-soft);margin-bottom:12px}
+.aifield{font-size:12px;color:#c4d0e2;line-height:1.5}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.toggle{width:48px;height:26px;border-radius:20px;background:var(--panel3);border:1px solid var(--border);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#94a3b8;transition:all .2s}
+.toggle.on{background:var(--green2);border-color:var(--green)}
+.toggle.on::after{left:24px;background:#d1fae5}
+
+/* Suggestions grid */
+.suggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.sugcard{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:8px}
+.sughead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sughead b{font-size:13px}
+.sugcard textarea{min-height:74px}
+
+/* Logs */
+pre.logs{background:#050a14;border:1px solid var(--border-soft);border-radius:12px;padding:14px;font-size:11px;max-height:calc(100vh - 140px);overflow:auto;color:#9fd3b0;line-height:1.6}
+
+/* Toast */
+#toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:99}
+.toast{background:var(--panel2);border:1px solid var(--green);border-left:4px solid var(--green);padding:11px 14px;border-radius:12px;font-size:12px;max-width:320px;box-shadow:0 8px 30px rgba(0,0,0,.5);animation:slidein .25s}
+@keyframes slidein{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--panel3);border-radius:6px}
+@media(max-width:1100px){#app{grid-template-columns:220px 1fr}.stats{grid-template-columns:repeat(2,1fr)}#chatDetail{grid-template-columns:1fr}#aiRail{display:none}}
 </style>
 </head>
 <body>
-<header>
-  <span style="font-size:22px">🤖</span>
-  <h1>WhatsApp Asistan <span style="color:var(--muted);font-weight:400">— 7/24 akilli sohbet yoneticisi</span></h1>
-  <span id="status">yukleniyor…</span>
-  <a href="/qr" target="_blank" style="color:var(--green);font-size:13px;">QR Kod</a>
-</header>
-<nav>
-  <button data-tab="chats" class="active">Sohbetlerim</button>
-  <button data-tab="suggestions">Onay Bekleyenler <span id="sugCount"></span></button>
-  <button data-tab="ask">Sohbete Sor</button>
-  <button data-tab="logs">Kayitlar</button>
-</nav>
-<main>
+<div id="app">
 
-  <section id="tab-chats">
-    <div class="card">
-      <div class="row"><div><b>Nasil calisir?</b><div class="muted">Gelen her mesajda asistaniniz sohbeti okur, ozetler ve size bir cevap taslagi hazirlar. "Otomatik" sectiginiz kisilere insan gibi gecikmeyle kendisi yanit verir; digerleri onayinizi bekler.</div></div><button class="ghost" onclick="loadChats()">Yenile</button></div>
+  <aside id="sidebar">
+    <div class="brand">
+      <img src="/logo-icon.svg" alt="Asistan" />
+      <div><h1>WhatsApp Asistan<small>AI YAYIN MERKEZİ</small></h1></div>
     </div>
-    <div id="chatList"></div>
-  </section>
-
-  <section id="tab-suggestions" class="hidden">
-    <div class="card"><b>Onay Bekleyen Cevap Taslaklari</b><div class="muted">Dilediginiz gibi duzenleyip gonderin ya da yok sayin.</div></div>
-    <div id="suggestionList"></div>
-  </section>
-
-  <section id="tab-ask" class="hidden">
-    <div class="card">
-      <b>Sohbete Sor</b>
-      <div class="muted">Ornek: "Bu sohbette konu nereye gidiyor?", "Son mesajda ne istedi?", "Kiminle ne konusuluyor?"</div>
-      <label>Sohbet sec</label>
-      <select id="askChat"></select>
-      <label>Sorunuz</label>
-      <input type="text" id="askQuestion" placeholder="Sorunuzu yazin…" />
-      <button class="btn" onclick="askChat()">Sor</button>
-      <div id="askAnswer" class="msg hidden"></div>
+    <nav class="nav">
+      <button class="navbtn active" data-view="dashboard"><span class="ic">▦</span>Panel</button>
+      <button class="navbtn" data-view="chats"><span class="ic">☰</span>Sohbetlerim</button>
+      <button class="navbtn" data-view="suggestions"><span class="ic">✦</span>Onay Bekleyenler<span class="badge" id="sugBadge" style="display:none">0</span></button>
+      <button class="navbtn" data-view="logs"><span class="ic">⌗</span>Kayıtlar</button>
+    </nav>
+    <div class="sidefoot">
+      <div class="statuspill"><div class="dot" id="statusDot"></div><span id="statusText">Bağlanıyor…</span></div>
+      <button class="sidebtn" id="pushBtn">🔔 <span id="pushBtnText">Bildirimleri Aç</span></button>
+      <button class="sidebtn" id="voiceBtn">🔊 <span id="voiceBtnText">Sesli Okuma: KAPALI</span></button>
+      <a href="/qr" target="_blank" class="sidebtn" style="text-decoration:none">📱 <span>QR Kod Sayfası</span></a>
     </div>
-  </section>
+  </aside>
 
-  <section id="tab-logs" class="hidden">
-    <div class="card"><div class="row"><b>Sistem Kayitlari</b><button class="ghost" onclick="loadLogs()">Yenile</button></div><pre id="logBox"></pre></div>
-  </section>
+  <main id="main">
 
-</main>
-<div id="toast"></div>
+    <!-- ============ DASHBOARD ============ -->
+    <section class="view active" id="view-dashboard">
+      <div class="viewhead">
+        <div><h2>Genel Bakış</h2><p>Tüm sohbetlerin tek merkezden canlı yönetimi</p></div>
+        <a class="ghost" href="/qr" target="_blank">📱 Cihaz Bağla</a>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="lbl">Sohbet</div><div class="val" id="st-chats">—</div><div class="sub">kayıtlı konuşma</div></div>
+        <div class="stat"><div class="lbl">Bugünkü Mesaj</div><div class="val" id="st-today">—</div><div class="sub">son 24 saat</div></div>
+        <div class="stat"><div class="lbl">Onay Bekleyen</div><div class="val" id="st-pending">—</div><div class="sub">cevap taslağı</div></div>
+        <div class="stat"><div class="lbl">Otomatik Kurgu</div><div class="val" id="st-auto">—</div><div class="sub">kendi kendine cevaplayan</div></div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Canlı Aktivite</h3>
+          <div class="feed" id="activityFeed"><div class="empty">Henüz aktivite yok. WhatsApp bağlıysa mesajlar buraya düşer.</div></div>
+        </div>
+        <div class="card">
+          <h3>Nasıl Çalışır?</h3>
+          <div class="aifield" style="line-height:1.9">
+            1. Her gelen mesajda AI sohbeti okur → <b>özet + konunun gittiği yön</b> çıkarır.<br>
+            2. Sana uygun bir <b>cevap taslağı</b> hazırlar.<br>
+            3. <b>Otomatik</b> seçtiğin sohbetlere insan gibi yazıp <b>direkt cevap gönderir</b>.<br>
+            4. Diğerleri <b>Onay Bekleyenler</b>'e düşer — tek tıkla gönder.<br>
+            5. Sol menüden <b>🔊 Sesli Okuma</b>'yı açarsan gelen mesajları <b>sana okur</b>.<br>
+            6. <b>🔔 Bildirimleri Aç</b>'a basarsan site kapalıyken bile telefona bildirim gelir.<br>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CHATS ============ -->
+    <section class="view" id="view-chats">
+      <div id="chatListPane">
+        <div id="chatListHead">
+          <input type="text" id="chatSearch" placeholder="🔍 Sohbet ara…" />
+        </div>
+        <div id="chatList"></div>
+      </div>
+      <div id="chatDetail">
+        <div id="chatMain">
+          <div id="chatHeader">
+            <div class="avatar" id="selAvatar">—</div>
+            <div><div class="hname" id="selName">Bir sohbet seçin</div><div class="hsub" id="selSub">Soldan bir konuşma seçin</div></div>
+          </div>
+          <div id="msgBox"><div class="empty">Sohbet seçilmedi.</div></div>
+          <div id="composer">
+            <input type="text" id="composerInput" placeholder="Mesajınızı yazın…" />
+            <button class="btn" id="composerSend">Gönder</button>
+          </div>
+        </div>
+        <div id="aiRail">
+          <div class="card">
+            <h3>AI Analiz</h3>
+            <label>Sohbetin Özeti</label>
+            <div class="aifield" id="aiSummary">—</div>
+            <label>Konunun Gittiği Yön</label>
+            <div class="aifield" id="aiDirection">—</div>
+            <button class="ghost" id="analyzeBtn" style="margin-top:10px;width:100%;justify-content:center">✦ Şimdi Özetle</button>
+          </div>
+          <div class="card">
+            <h3>AI'ya Sor</h3>
+            <input type="text" id="askInput" placeholder="Örn: Bu konu nereye gidiyor?" />
+            <button class="ghost" id="askBtn" style="margin-top:8px;width:100%;justify-content:center">Sor</button>
+            <div class="aifield" id="askAnswer" style="margin-top:10px"></div>
+          </div>
+          <div class="card">
+            <h3>Otomatik Cevaplama</h3>
+            <div class="switch">
+              <span class="aifield" id="autoLabel">Bu sohbette AI kendi kendine cevap versin</span>
+              <div class="toggle" id="autoToggle" role="switch" aria-checked="false" tabindex="0"></div>
+            </div>
+            <label>AI'ya talimatın</label>
+            <textarea id="autoInstruction" placeholder="Örn: Kısa ve net yaz, randevu için Cuma de, asla fiyat verme…"></textarea>
+            <button class="ghost" id="saveAutoBtn" style="margin-top:8px;width:100%;justify-content:center">Kaydet</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SUGGESTIONS ============ -->
+    <section class="view" id="view-suggestions">
+      <div class="viewhead">
+        <div><h2>Onay Bekleyen Cevap Taslakları</h2><p>Düzenleyip gönderin ya da yok sayın</p></div>
+        <button class="ghost" onclick="loadSuggestions()">Yenile</button>
+      </div>
+      <div class="suggrid" id="sugGrid"></div>
+    </section>
+
+    <!-- ============ LOGS ============ -->
+    <section class="view" id="view-logs">
+      <div class="viewhead">
+        <div><h2>Sistem Kayıtları</h2><p>Hataları ve olayları buradan izleyin</p></div>
+        <button class="ghost" onclick="loadLogs()">Yenile</button>
+      </div>
+      <pre class="logs" id="logBox"></pre>
+    </section>
+
+  </main>
+</div>
+<div id="toasts"></div>
 
 <script>
-const $ = (s) => document.querySelector(s);
+const $ = (s, r) => (r||document).querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function toast(t) { const el = $('#toast'); el.textContent = t; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 2500); }
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtTime = (ts) => new Date(ts).toLocaleString('tr-TR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+const initials = (name) => (name || '?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
 
-$$('nav button').forEach(b => b.addEventListener('click', () => {
-  $$('nav button').forEach(x => x.classList.remove('active'));
-  b.classList.add('active');
-  $$('main > section').forEach(s => s.classList.add('hidden'));
-  $('#tab-' + b.dataset.tab).classList.remove('hidden');
-  if (b.dataset.tab === 'suggestions') loadSuggestions();
-  if (b.dataset.tab === 'ask') fillAskSelect();
-  if (b.dataset.tab === 'logs') loadLogs();
-}));
+const state = {
+  view: 'dashboard',
+  chats: [],
+  selectedChat: null,
+  lastTs: Date.now(),
+  voice: localStorage.getItem('voice') === '1',
+  pushOn: false,
+};
+
+function toast(msg, ms) {
+  const box = $('#toasts');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(() => el.remove(), ms || 4000);
+}
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
@@ -106,152 +299,293 @@ async function api(path, opts) {
   return res.json();
 }
 
+/* ---------- Navigation ---------- */
+$$('.navbtn').forEach(btn => btn.addEventListener('click', () => {
+  $$('.navbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  $$('.view').forEach(v => v.classList.remove('active'));
+  const view = btn.dataset.view;
+  $('#view-' + view).classList.add('active');
+  state.view = view;
+  if (view === 'dashboard') loadDashboard();
+  if (view === 'chats') loadChats();
+  if (view === 'suggestions') loadSuggestions();
+  if (view === 'logs') loadLogs();
+}));
+
+/* ---------- Status ---------- */
 async function refreshStatus() {
   try {
     const s = await fetch('/api/status').then(r => r.json());
-    const el = $('#status');
-    el.textContent = 'Durum: ' + s.status + (s.aiConfigured ? '' : ' (DeepSeek anahtari eksik!)');
-    el.className = s.status;
-  } catch (_) {}
+    const dot = $('#statusDot'), txt = $('#statusText');
+    txt.textContent = 'Durum: ' + s.status + (s.aiConfigured ? '' : ' · DeepSeek anahtarı eksik');
+    dot.className = 'dot' + (s.status === 'ready' ? ' ready' : (s.status === 'disconnected' || s.status === 'auth_failure' ? ' bad' : ''));
+  } catch (_) { $('#statusText').textContent = 'Sunucuya ulaşılamıyor'; $('#statusDot').className = 'dot bad'; }
 }
 setInterval(refreshStatus, 5000);
 
-// Acik mesaj panellerini ve kullanicinin yazdigi talimatlari koru
-window.__openMsgs = new Set();
+/* ---------- Stats & activity ---------- */
+async function loadStats() {
+  try {
+    const s = await api('/api/stats');
+    $('#st-chats').textContent = s.chats;
+    $('#st-today').textContent = s.todayMessages;
+    $('#st-pending').textContent = s.pending;
+    $('#st-auto').textContent = s.autoOn;
+    const badge = $('#sugBadge');
+    if (s.pending > 0) { badge.textContent = s.pending; badge.style.display = ''; } else badge.style.display = 'none';
+  } catch (_) {}
+}
+async function loadActivity() {
+  try {
+    const items = await api('/api/activity?limit=14');
+    const feed = $('#activityFeed');
+    if (!items.length) { feed.innerHTML = '<div class="empty">Henüz aktivite yok.</div>'; return; }
+    feed.innerHTML = items.map(m => `
+      <div class="feeditem">
+        <div class="${m.from_me ? 'fi-out' : 'fi-in'}">${m.from_me ? '➤' : '⮜'}</div>
+        <div><b>${esc(m.chat_name || m.chat_id)}</b><span>${esc((m.body || '(medya)').slice(0, 110))}</span></div>
+        <time>${fmtTime(m.timestamp)}</time>
+      </div>`).join('');
+  } catch (_) {}
+}
+async function loadDashboard() { await Promise.all([loadStats(), loadActivity()]); }
 
-setInterval(() => {
-  const chatsTab = !$('#tab-chats').classList.contains('hidden');
-  const sugTab = !$('#tab-suggestions').classList.contains('hidden');
-  if (chatsTab) {
-    // Kullanici bir talimat alanına yazıyorsa ya da mesaj paneli açıksa yenileme yapma
-    const focused = document.activeElement && $('#chatList').contains(document.activeElement);
-    if (focused || window.__openMsgs.size > 0) return;
-    loadChats().catch(() => {});
-  } else if (sugTab) {
-    const focused = document.activeElement && $('#suggestionList').contains(document.activeElement);
-    if (focused) return;
-    loadSuggestions().catch(() => {});
-  }
-}, 3000);
+/* ---------- Chats ---------- */
+let chatsFilter = '';
+$('#chatSearch').addEventListener('input', e => { chatsFilter = e.target.value.toLowerCase(); renderChatList(); });
 
 async function loadChats() {
-  window.__openMsgs.clear();
-  const chats = await api('/api/chats');
-  const el = $('#chatList');
-  if (!chats.length) { el.innerHTML = '<div class="card muted">Henuz sohbet yok. WhatsApp baglandiktan sonra mesajlar burada gorunecek.</div>'; return; }
-  el.innerHTML = chats.map(c => `
-    <div class="card">
-      <div class="row">
-        <div style="flex:1">
-          <b>${esc(c.name)}</b>${c.is_group ? '<span class="badge">GRUP</span>' : ''}${c.pending_suggestions ? `<span class="badge">${c.pending_suggestions} oneri</span>` : ''}
-          <div class="muted">Son mesaj: ${c.last_message_at ? new Date(c.last_message_at).toLocaleString('tr-TR') : '-'}</div>
-          ${c.summary ? `<div class="msg" style="margin-top:8px"><div class="meta">OZET (AI)</div>${esc(c.summary)}</div>` : ''}
-          ${c.topic_direction ? `<div class="msg"><div class="meta">KONUNUN GITTIGI YON (AI)</div>${esc(c.topic_direction)}</div>` : ''}
-        </div>
-        <div style="min-width:210px">
-          <label>Otomatik yanit</label>
-          <div class="toggle ${c.auto_enabled ? 'on' : ''}" onclick="toggleAuto('${esc(c.id)}', ${c.auto_enabled ? 0 : 1}, this)">${c.auto_enabled ? 'ACIK — kendisi yanitliyor' : 'KAPALI — onayinizi bekler'}</div>
-          <textarea id="ins-${esc(c.id)}" placeholder="Bu kisi icin talimat (orn: randevu alinca yarin diye yaz)…">${esc(c.auto_instruction || '')}</textarea>
-          <button class="ghost" style="font-size:11px;padding:4px 8px" onclick="saveInstruction('${esc(c.id)}')">Talimati kaydet</button>
-        </div>
+  try { state.chats = await api('/api/chats'); } catch (_) { state.chats = []; }
+  renderChatList();
+  if (state.selectedChat) {
+    const still = state.chats.find(c => c.id === state.selectedChat);
+    if (still) renderAiRail(still);
+  }
+}
+function renderChatList() {
+  const list = $('#chatList');
+  const filtered = state.chats.filter(c => (c.name || c.id || '').toLowerCase().includes(chatsFilter));
+  if (!filtered.length) { list.innerHTML = '<div class="empty">Sohbet bulunamadı.</div>'; return; }
+  list.innerHTML = filtered.map(c => `
+    <div class="chatitem ${state.selectedChat === c.id ? 'sel' : ''}" data-id="${esc(c.id)}">
+      <div class="avatar">${esc(initials(c.name))}</div>
+      <div style="min-width:0">
+        <div class="cname">${esc(c.name)}${c.auto_enabled ? '<span class="autochip">OTOMATİK</span>' : ''}${c.pending_suggestions ? `<span class="pendchip">${c.pending_suggestions} TASLAK</span>` : ''}</div>
+        <div class="cprev">${esc((c.summary || 'AI analizi bekleniyor…'))}</div>
       </div>
-      <div style="margin-top:10px">
-        <button class="ghost" onclick="analyze('${esc(c.id)}')">✦ Simdi ozetle</button>
-        <button class="ghost" onclick="toggleMessages('${esc(c.id)}')">Mesajlari goster/gizle</button>
-        <button class="ghost" onclick="promptSend('${esc(c.id)}')">Mesaj gonder</button>
-      </div>
-      <div id="msgs-${esc(c.id)}" class="hidden" style="margin-top:10px"></div>
+      <time>${c.last_message_at ? fmtTime(c.last_message_at) : ''}</time>
     </div>`).join('');
+  $$('.chatitem', list).forEach(el => el.addEventListener('click', () => selectChat(el.dataset.id)));
 }
 
-async function toggleAuto(id, enabled, el) {
-  const instruction = $('#ins-' + id)?.value || '';
-  await api('/api/rules/' + encodeURIComponent(id), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ enabled: !!enabled, instruction }) });
-  toast('Kural guncellendi');
-  loadChats();
+async function selectChat(id) {
+  state.selectedChat = id;
+  const chat = state.chats.find(c => c.id === id);
+  $('#selAvatar').textContent = initials(chat?.name);
+  $('#selName').textContent = chat?.name || id;
+  $('#selSub').textContent = chat?.is_group ? 'Grup sohbeti' : 'Özel sohbet';
+  $('#askAnswer').textContent = '';
+  $('#askInput').value = '';
+  renderAiRail(chat);
+  renderChatList();
+  await loadMessages(id);
 }
-async function saveInstruction(id) {
-  const instruction = $('#ins-' + id)?.value || '';
-  const isOn = $('#ins-' + id)?.closest('.card')?.querySelector('.toggle')?.classList.contains('on');
-  await api('/api/rules/' + encodeURIComponent(id), { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ enabled: !!isOn, instruction }) });
-  toast('Talimat kaydedildi');
+
+function renderAiRail(chat) {
+  if (!chat) return;
+  $('#aiSummary').textContent = chat.summary || 'Henüz özet yok — "Şimdi Özetle"ye basın.';
+  $('#aiDirection').textContent = chat.topic_direction || '—';
+  $('#autoInstruction').value = chat.auto_instruction || '';
+  $('#autoToggle').classList.toggle('on', !!chat.auto_enabled);
+  $('#autoToggle').setAttribute('aria-checked', chat.auto_enabled ? 'true' : 'false');
 }
-async function analyze(id) {
+
+async function loadMessages(id) {
+  const box = $('#msgBox');
+  try {
+    const msgs = await api('/api/chats/' + encodeURIComponent(id) + '/messages?limit=80');
+    if (!msgs.length) { box.innerHTML = '<div class="empty">Mesaj yok.</div>'; return; }
+    box.innerHTML = msgs.map(bubbleHtml).join('');
+    box.scrollTop = box.scrollHeight;
+  } catch (_) { box.innerHTML = '<div class="empty">Mesajlar yüklenemedi.</div>'; }
+}
+function bubbleHtml(m) {
+  return `<div class="bub ${m.from_me ? 'out' : 'in'}">
+    <div class="bmeta"><span>${m.from_me ? 'BEN' : esc(m.sender_name || m.sender || '')}</span><span>${fmtTime(m.timestamp)}</span>
+      ${m.from_me ? `<button class="danger" onclick="delMsg('${esc(m.wa_id)}')">Herkesten sil</button>` : ''}
+    </div>${esc(m.body || '(medya)')}</div>`;
+}
+async function delMsg(waId) {
+  if (!confirm('Bu mesajınız HERKESTEN silinsin mi?')) return;
+  try { await api('/api/messages/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ waId, target: 'everyone' }) }); toast('Mesajınız herkesten silindi'); if (state.selectedChat) loadMessages(state.selectedChat); }
+  catch (e) { toast('Hata: ' + e.message); }
+}
+
+$('#composerSend').addEventListener('click', sendComposer);
+$('#composerInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendComposer(); });
+async function sendComposer() {
+  const input = $('#composerInput');
+  const body = input.value.trim();
+  if (!body || !state.selectedChat) return;
+  input.value = '';
+  try { await api('/api/send', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ chatId: state.selectedChat, body }) });
+    toast('Mesaj gönderildi'); loadMessages(state.selectedChat); }
+  catch (e) { toast('Hata: ' + e.message); }
+}
+
+$('#analyzeBtn').addEventListener('click', async () => {
+  if (!state.selectedChat) return;
   toast('AI analiz ediyor…');
-  try { await api('/api/chats/' + encodeURIComponent(id) + '/analyze', { method: 'POST' }); loadChats(); toast('Analiz tamam'); }
-  catch (e) { toast('Hata: ' + e.message); }
-}
-async function toggleMessages(id) {
-  const box = $('#msgs-' + id);
-  if (!box.classList.contains('hidden')) { box.classList.add('hidden'); window.__openMsgs.delete(id); return; }
-  window.__openMsgs.add(id);
-  const msgs = await api('/api/chats/' + encodeURIComponent(id) + '/messages?limit=40');
-  box.innerHTML = msgs.map(m => `
-    <div class="msg ${m.from_me ? 'me' : ''}">
-      <div class="meta">${m.from_me ? 'BEN' : esc(m.sender_name || m.sender || '')} · ${new Date(m.timestamp).toLocaleString('tr-TR')}
-        ${m.from_me ? `<button class="danger" style="margin-left:8px" onclick="delMsg('${esc(m.wa_id)}','everyone')">Herkesten sil</button>` : '<span style="margin-left:8px">(karsi taraf mesaji silinemez)</span>'}
-      </div>${esc(m.body || '(medya)')}</div>`).join('');
-  box.classList.remove('hidden');
-}
-async function delMsg(waId, target) {
-  if (!confirm('Bu mesajiniz herkesten silinsin mi?')) return;
-  try { const r = await api('/api/messages/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ waId, target }) }); toast('Mesajiniz herkesten silindi'); }
-  catch (e) { toast('Hata: ' + e.message); }
-}
-async function promptSend(id) {
-  const body = prompt('Gonderilecek mesaj:');
-  if (!body) return;
-  try { await api('/api/send', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ chatId: id, body }) }); toast('Gonderildi'); }
-  catch (e) { toast('Hata: ' + e.message); }
-}
+  try {
+    const r = await api('/api/chats/' + encodeURIComponent(state.selectedChat) + '/analyze', { method:'POST' });
+    $('#aiSummary').textContent = r.summary || '—';
+    $('#aiDirection').textContent = r.topic_direction || '—';
+    toast('Analiz tamamlandı'); loadChats();
+  } catch (e) { toast('Hata: ' + e.message); }
+});
 
+$('#askBtn').addEventListener('click', async () => {
+  const q = $('#askInput').value.trim();
+  if (!q || !state.selectedChat) return;
+  const out = $('#askAnswer');
+  out.textContent = 'AI düşünüyor…';
+  try {
+    const r = await api('/api/chats/' + encodeURIComponent(state.selectedChat) + '/ask', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ question: q }) });
+    out.textContent = r.answer;
+  } catch (e) { out.textContent = 'Hata: ' + e.message; }
+});
+
+$('#autoToggle').addEventListener('click', () => { $('#autoToggle').classList.toggle('on'); });
+$('#saveAutoBtn').addEventListener('click', async () => {
+  if (!state.selectedChat) return;
+  const enabled = $('#autoToggle').classList.contains('on');
+  const instruction = $('#autoInstruction').value;
+  try {
+    await api('/api/rules/' + encodeURIComponent(state.selectedChat), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ enabled, instruction }) });
+    toast(enabled ? 'Otomatik cevaplama AÇILDI — AI bu sohbete kendisi yanıt verecek' : 'Otomatik cevaplama KAPATILDI');
+    loadChats(); loadStats();
+  } catch (e) { toast('Hata: ' + e.message); }
+});
+
+/* ---------- Suggestions ---------- */
 async function loadSuggestions() {
-  const items = await api('/api/suggestions?status=pending');
-  $('#sugCount').textContent = items.length ? '(' + items.length + ')' : '';
-  const el = $('#suggestionList');
-  if (!items.length) { el.innerHTML = '<div class="card muted">Onay bekleyen taslak yok.</div>'; return; }
-  el.innerHTML = items.map(s => `
-    <div class="card">
-      <b>${esc(s.chat_name)}</b> <span class="muted">${new Date(s.created_at).toLocaleString('tr-TR')}</span>
-      ${s.summary ? `<div class="msg"><div class="meta">OZET (AI)</div>${esc(s.summary)}</div>` : ''}
-      ${s.topic_direction ? `<div class="msg"><div class="meta">KONUNUN GITTIGI YON (AI)</div>${esc(s.topic_direction)}</div>` : ''}
-      <label>Taslak cevap (duzenleyebilirsiniz)</label>
-      <textarea id="sg-${s.id}">${esc(s.draft)}</textarea>
-      <button class="btn" onclick="sendSuggestion(${s.id})">Gonder</button>
-      <button class="ghost" onclick="discardSuggestion(${s.id})">Yok say</button>
-    </div>`).join('');
+  try {
+    const items = await api('/api/suggestions?status=pending');
+    loadStats();
+    const grid = $('#sugGrid');
+    if (!items.length) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Onay bekleyen taslak yok.</div>'; return; }
+    grid.innerHTML = items.map(s => `
+      <div class="sugcard">
+        <div class="sughead"><b>${esc(s.chat_name)}</b><span class="cprev" style="max-width:none">${fmtTime(s.created_at)}</span></div>
+        ${s.summary ? `<div class="aifield" style="font-size:11px;color:var(--muted)">${esc(s.summary)}</div>` : ''}
+        <label>Taslak Cevap</label>
+        <textarea id="sg-${s.id}">${esc(s.draft)}</textarea>
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="sendSuggestion(${s.id})">Gönder</button>
+          <button class="ghost" onclick="discardSuggestion(${s.id})">Yok Say</button>
+        </div>
+      </div>`).join('');
+  } catch (e) { toast('Hata: ' + e.message); }
 }
 async function sendSuggestion(id) {
   const body = $('#sg-' + id).value.trim();
-  try { await api('/api/suggestions/' + id + '/send', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ body }) }); toast('Gonderildi'); loadSuggestions(); }
+  try { await api('/api/suggestions/' + id + '/send', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ body }) }); toast('Cevap gönderildi'); loadSuggestions(); }
   catch (e) { toast('Hata: ' + e.message); }
 }
 async function discardSuggestion(id) {
-  await api('/api/suggestions/' + id + '/discard', { method: 'POST' });
-  loadSuggestions();
+  await api('/api/suggestions/' + id + '/discard', { method:'POST' });
+  toast('Taslak yoksayıldı'); loadSuggestions();
 }
 
-async function fillAskSelect() {
-  const chats = await api('/api/chats');
-  $('#askChat').innerHTML = chats.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
-}
-async function askChat() {
-  const id = $('#askChat').value, q = $('#askQuestion').value.trim();
-  if (!q) return;
-  const box = $('#askAnswer');
-  box.textContent = 'AI dusunuyor…'; box.classList.remove('hidden');
-  try {
-    const r = await api('/api/chats/' + encodeURIComponent(id) + '/ask', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ question: q }) });
-    box.textContent = r.answer;
-  } catch (e) { box.textContent = 'Hata: ' + e.message; }
-}
-
+/* ---------- Logs ---------- */
 async function loadLogs() {
-  const logs = await api('/api/logs?limit=120');
-  $('#logBox').textContent = logs.map(l => '[' + new Date(l.created_at).toLocaleString('tr-TR') + '] [' + l.level + '] ' + l.message).join('\n');
+  try {
+    const logs = await api('/api/logs?limit=150');
+    $('#logBox').textContent = logs.map(l => `[${fmtTime(l.created_at)}] [${l.level.toUpperCase()}] ${l.message}`).join('\n');
+  } catch (e) { $('#logBox').textContent = 'Kayıtlar yüklenemedi: ' + e.message; }
 }
 
+/* ---------- Sesli okuma (TTS) ---------- */
+const voiceBtn = $('#voiceBtn');
+function renderVoiceBtn() {
+  $('#voiceBtnText').textContent = 'Sesli Okuma: ' + (state.voice ? 'AÇIK' : 'KAPALI');
+  voiceBtn.classList.toggle('on', state.voice);
+}
+voiceBtn.addEventListener('click', () => {
+  state.voice = !state.voice;
+  localStorage.setItem('voice', state.voice ? '1' : '0');
+  renderVoiceBtn();
+  if (state.voice) speak('Sesli okuma açıldı');
+});
+function speak(text) {
+  if (!state.voice || !('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'tr-TR';
+  u.rate = 1.02;
+  speechSynthesis.speak(u);
+}
+renderVoiceBtn();
+
+/* ---------- Web Push ---------- */
+const pushBtn = $('#pushBtn');
+function urlB64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+pushBtn.addEventListener('click', async () => {
+  try {
+    if (state.pushOn) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = await reg?.pushManager.getSubscription();
+      await sub?.unsubscribe();
+      state.pushOn = false;
+      $('#pushBtnText').textContent = 'Bildirimleri Aç';
+      pushBtn.classList.remove('on');
+      toast('Bildirimler kapatıldı');
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { toast('Bildirim izni reddedildi'); return; }
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    const { key } = await api('/api/push/vapid-public-key');
+    if (!key) { toast('Sunucuda VAPID anahtarı yok (Render Environment gerekli)'); return; }
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(key) });
+    await api('/api/push/subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(sub) });
+    state.pushOn = true;
+    $('#pushBtnText').textContent = 'Bildirimler AÇIK';
+    pushBtn.classList.add('on');
+    toast('Bildirimler açıldı — site kapalıyken bile bildirim alırsınız');
+  } catch (e) { toast('Bildirim hatası: ' + e.message); }
+});
+
+/* ---------- Canlı akış (poll) ---------- */
+async function poll() {
+  try {
+    const data = await api('/api/poll?since=' + state.lastTs);
+    if (data.messages?.length) {
+      for (const m of data.messages) {
+        if (!m.from_me && m.body) {
+          toast((m.chat_name || 'Yeni') + ': ' + m.body.slice(0, 70));
+          speak(`${m.chat_name || 'Mesaj'} diyor: ${m.body}`);
+        }
+        state.lastTs = Math.max(state.lastTs, m.timestamp);
+      }
+      // Seçili sohbet listede görünüyorsa mesajları tazele
+      if (state.view === 'chats' && state.selectedChat) loadMessages(state.selectedChat);
+      if (state.view === 'dashboard') loadDashboard();
+      if (state.view === 'chats') loadChats();
+    }
+    loadStats();
+  } catch (_) {}
+}
+setInterval(poll, 2500);
+
+/* ---------- Boot ---------- */
 refreshStatus();
+loadDashboard();
 loadChats();
 </script>
 </body>

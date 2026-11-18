@@ -59,6 +59,12 @@ function init() {
       message TEXT,
       created_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      data TEXT UNIQUE NOT NULL,
+      created_at INTEGER NOT NULL
+    );
   `);
   return db;
 }
@@ -154,6 +160,41 @@ const queries = {
   },
   getMessageByWaId(waId) {
     return db.prepare('SELECT * FROM messages WHERE wa_id = ?').get(waId);
+  },
+  latestMessagesSince(ms) {
+    return db.prepare(`
+      SELECT m.*, c.name AS chat_name FROM messages m
+      JOIN chats c ON c.id = m.chat_id
+      WHERE m.timestamp > ?
+      ORDER BY m.timestamp ASC
+      LIMIT 30
+    `).all(ms);
+  },
+  stats() {
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    return {
+      chats: db.prepare('SELECT COUNT(*) AS c FROM chats').get().c,
+      todayMessages: db.prepare('SELECT COUNT(*) AS c FROM messages WHERE timestamp > ?').get(dayAgo).c,
+      pending: db.prepare("SELECT COUNT(*) AS c FROM suggestions WHERE status = 'pending'").get().c,
+      autoOn: db.prepare('SELECT COUNT(*) AS c FROM rules WHERE enabled = 1').get().c,
+    };
+  },
+  activityFeed(limit) {
+    return db.prepare(`
+      SELECT m.*, c.name AS chat_name FROM messages m
+      JOIN chats c ON c.id = m.chat_id
+      ORDER BY m.timestamp DESC
+      LIMIT ?
+    `).all(limit);
+  },
+  savePushSubscription(json) {
+    db.prepare('INSERT OR IGNORE INTO push_subscriptions (data, created_at) VALUES (?, ?)').run(json, Date.now());
+  },
+  listPushSubscriptions() {
+    return db.prepare('SELECT data FROM push_subscriptions').all().map((r) => JSON.parse(r.data));
+  },
+  deletePushSubscription(json) {
+    db.prepare('DELETE FROM push_subscriptions WHERE data = ?').run(json);
   },
   recentChatsWithMessages(limit) {
     return db.prepare('SELECT * FROM chats ORDER BY updated_at DESC LIMIT ?').all(limit);

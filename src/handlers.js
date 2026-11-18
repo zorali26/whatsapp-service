@@ -1,6 +1,7 @@
 const config = require('./config');
 const { queries, log } = require('./db');
 const { analyzeConversation } = require('./ai');
+const { notifyAll } = require('./push');
 
 /**
  * Kaydedilen son mesajdan sonra AI analizi yapar:
@@ -45,13 +46,16 @@ async function analyzeAndMaybeRespond({ chatId, chatName, triggerWaId, silent, h
       await humanSend(chatId, analysis.suggested_reply);
       queries.createSuggestion({ ...base, status: 'sent', sent_at: Date.now() });
       log('info', `Otomatik cevap gonderildi -> ${chatName}`);
+      notifyAll(chatName, `Asistan otomatik cevapladi: ${analysis.suggested_reply.slice(0, 80)}`, '/').catch(() => {});
     } catch (e) {
       log('error', 'Otomatik cevap gonderilemedi: ' + e.message);
       queries.createSuggestion(base); // gonderilemediyse onaya dusur
+      notifyAll(chatName, 'Otomatik cevap gonderilemedi — onayinizi bekliyor', '/').catch(() => {});
     }
   } else {
     queries.createSuggestion(base);
     log('info', `Cevap onerisi olusturuldu -> ${chatName} (panelden onaylayin)`);
+    notifyAll(chatName, `Yeni cevap taslagi: ${analysis.suggested_reply.slice(0, 80)}`, '/').catch(() => {});
   }
 }
 

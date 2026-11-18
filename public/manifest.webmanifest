@@ -1,0 +1,11 @@
+{
+  "name": "WhatsApp Asistan",
+  "short_name": "WA Asistan",
+  "description": "Kişisel WhatsApp hattınız için 7/24 yapay zekâ asistanı",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "lang": "tr",
+  "icons": [{ "src": "/logo-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

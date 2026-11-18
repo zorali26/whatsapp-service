@@ -4,12 +4,12 @@ Kişisel WhatsApp hattınız için **ücretsiz** 7/24 çalışan, DeepSeek deste
 WhatsApp Web protokolünü **tarayıcısız** (Baileys, WebSocket) konuşur; Render Free planda (512 MB RAM) sığar.
 
 **Ne yapar?**
-- Gelen/giden tüm mesajları okur, veritabanına kaydeder
-- Gelen her mesajda sohbetin özetini ve **konunun gittiği yönü** çıkarır
-- Seçtiğiniz kişilere "yazıyor..." durumu + insan benzeri gecikme ile **otomatik yanıt** verir
-- Diğer sohbetler için onayınıza sunulan **cevap taslakları** hazırlar
-- "Sohbete Sor" sekmesinden dilediğiniz sohbet hakkında soru sorun
-- Kendi mesajınızı **herkesten silme** (karşı tarafın mesajı silinemez — WhatsApp sınırı + bu modun sınırı)
+- Gelen/giden **tüm mesajları ve eski sohbet geçmişini** kaydeder (bağlantıda tam geçmiş senkronu)
+- Her mesajda sohbetin özetini ve **konunun gittiği yönü** çıkarır
+- Seçtiğiniz kişilere "yazıyor..." durumu + insan benzeri gecikme ile **direkt otomatik cevap** verir
+- Diğer sohbetler için onayınıza gelen **cevap taslakları**
+- **Telefonunuza bildirim**: site açıkken toast + sesli okuma (TTS), site kapalıyken Web Push (`🔔 Bildirimleri Aç`)
+- Profesyonel panel: canlı aktivite akışı, sohbet arama, iki panelli mesaj görünümü, AI soru-cevap, istatistikler
 
 ---
 
@@ -34,6 +34,16 @@ WhatsApp Web protokolünü **tarayıcısız** (Baileys, WebSocket) konuşur; Ren
    - Create cronjob → URL: `https://<servis>.onrender.com/api/status` → her **10-14 dakikada** bir çalıştırın
    - Basic Auth gerekiyor mu sorarsa: kullanıcı `admin`, şifre `PANEL_TOKEN`
 5. **Oturum kalıcılığı:** Free planda disk kalıcı değildir. Redeploy veya servisin yeniden başlatılması sonrası **QR'ı tekrar okutmanız gerekir** (deploylar nadirdir; normal yeniden başlatmalarda oturum korunur). Sıfır QR sürekliliği istiyorsanız ücretsiz **Oracle Cloud Always Free** VM'yi ya da ücretli Starter planı kullanın.
+
+## Web Push Bildirimleri (telefonunuza, site kapalıyken bile)
+
+1. Render → servis → **Environment** → şu 3 satırı ekleyin (anahtarlar proje sahibi tarafından üretildi; ya da kendiniz `npx web-push generate-vapid-keys` ile üretin):
+   - `VAPID_PUBLIC_KEY` = `BBA6TEZm10rsZkW4QaIG3Q6F24pFFCmASBfXAG0R0aazSyiiDA4jOm-73QOwuNyg44crN3-tCNPUYqzmkuaFSJU`
+   - `VAPID_PRIVATE_KEY` = (gizli tutun — public repoya asla girmemeli)
+   - `VAPID_SUBJECT` = `mailto:admin@example.com`
+2. Deploy bitince panelden **🔔 Bildirimleri Aç**'a basın → izin verin → test mesajı gelin.
+3. iPhone'da: Safari ile siteyi açın → Paylaş → **Ana Ekrana Ekle** (iOS'ta bildirim yalnızca PWA olarak eklendiğinde çalışır).
+4. **🔊 Sesli Okuma** düğmesi, site açıkken gelen mesajı Türkçe okur.
 
 ## Yerel Kurulum
 
