@@ -1,0 +1,24 @@
+# Render acik (Blueprint) kurulumu icin:
+# Render Dashboard > New > Blueprint > bu repoyu secin.
+services:
+  - type: web
+    name: whatsapp-asistan
+    runtime: docker
+    plan: starter          # 7/24 icin Free plan uygun degil (uyur + disk yok). Starter (~2GB RAM) onerilir.
+    region: frankfurt      # Turkiye'ye en yakin bolge
+    dockerfilePath: ./Dockerfile
+    disk:
+      name: asistan-data   # Oturum + veritabani burada kalici saklanir; yoksa her deploy'da QR okutmaniz gerekir
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: PANEL_TOKEN
+        sync: false        # Render panelinde elle girin (uzun rastgele sifre)
+      - key: DEEPSEEK_API_KEY
+        sync: false        # Render panelinde elle girin
+      - key: DEEPSEEK_MODEL
+        value: deepseek-chat
+      - key: OWNER_NAME
+        sync: false
+      - key: DATA_DIR
+        value: /data

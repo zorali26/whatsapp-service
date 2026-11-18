@@ -153,10 +153,13 @@ function getStatus() {
 }
 
 function start() {
+  log('info', 'Chrome yolu: ' + (config.puppeteerExecutablePath || 'puppeteer varsayilani'));
   createClient();
   client.initialize().catch((e) => {
     state.status = 'error';
-    log('error', 'WhatsApp baslatilamadi: ' + e.message);
+    console.error('WHATSAPP HATASI DETAY:', e);
+    const detail = (e && (e.stack || e.message)) || (typeof e === 'object' ? JSON.stringify(e) : String(e));
+    log('error', 'WhatsApp baslatilamadi: ' + detail);
   });
   return client;
 }
